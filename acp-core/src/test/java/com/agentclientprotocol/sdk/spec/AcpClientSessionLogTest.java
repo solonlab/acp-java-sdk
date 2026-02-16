@@ -5,6 +5,7 @@
 package com.agentclientprotocol.sdk.spec;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import com.agentclientprotocol.sdk.TestUtil;
 
 /**
  * Tests for logging behavior in {@link AcpClientSession}.
@@ -73,14 +75,14 @@ class AcpClientSessionLogTest {
 		MockAcpClientTransport transport = new MockAcpClientTransport();
 
 		// Create session with no handlers
-		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, Map.of(), Map.of(), Function.identity());
+		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, Collections.emptyMap(), Collections.emptyMap(), Function.identity());
 
 		// Simulate incoming request for unhandled method
 		AcpSchema.JSONRPCRequest request = new AcpSchema.JSONRPCRequest(
 				AcpSchema.JSONRPC_VERSION,
 				"test-id",
 				"unknown/method",
-				Map.of("key", "value")
+				TestUtil.mapOf("key", "value")
 		);
 		transport.simulateIncomingMessage(request);
 
@@ -91,7 +93,7 @@ class AcpClientSessionLogTest {
 		List<ILoggingEvent> warnLogs = listAppender.list.stream()
 			.filter(event -> event.getLevel() == Level.WARN)
 			.filter(event -> event.getMessage().contains("No handler registered"))
-			.toList();
+			.collect(java.util.stream.Collectors.toList());
 
 		assertThat(warnLogs)
 			.describedAs("Expected WARN log when no handler registered for method")
@@ -113,14 +115,14 @@ class AcpClientSessionLogTest {
 		MockAcpClientTransport transport = new MockAcpClientTransport();
 
 		// Create session with no handlers
-		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, Map.of(), Map.of(), Function.identity());
+		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, Collections.emptyMap(), Collections.emptyMap(), Function.identity());
 
 		// Simulate incoming permission request
 		AcpSchema.JSONRPCRequest request = new AcpSchema.JSONRPCRequest(
 				AcpSchema.JSONRPC_VERSION,
 				"test-id",
 				AcpSchema.METHOD_SESSION_REQUEST_PERMISSION,
-				Map.of("sessionId", "session-123", "toolCall", Map.of("title", "Test"))
+				TestUtil.mapOf("sessionId", "session-123", "toolCall", TestUtil.mapOf("title", "Test"))
 		);
 		transport.simulateIncomingMessage(request);
 
@@ -131,7 +133,7 @@ class AcpClientSessionLogTest {
 		List<ILoggingEvent> warnLogs = listAppender.list.stream()
 			.filter(event -> event.getLevel() == Level.WARN)
 			.filter(event -> event.getMessage().contains("No handler registered"))
-			.toList();
+			.collect(java.util.stream.Collectors.toList());
 
 		assertThat(warnLogs).hasSize(1);
 		assertThat(warnLogs.get(0).getFormattedMessage())
@@ -149,14 +151,14 @@ class AcpClientSessionLogTest {
 		MockAcpClientTransport transport = new MockAcpClientTransport();
 
 		// Create session with no handlers
-		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, Map.of(), Map.of(), Function.identity());
+		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, Collections.emptyMap(), Collections.emptyMap(), Function.identity());
 
 		// Simulate incoming read request
 		AcpSchema.JSONRPCRequest request = new AcpSchema.JSONRPCRequest(
 				AcpSchema.JSONRPC_VERSION,
 				"test-id",
 				AcpSchema.METHOD_FS_READ_TEXT_FILE,
-				Map.of("path", "/test.txt")
+				TestUtil.mapOf("path", "/test.txt")
 		);
 		transport.simulateIncomingMessage(request);
 
@@ -166,7 +168,7 @@ class AcpClientSessionLogTest {
 		// Verify WARN mentions capability
 		List<ILoggingEvent> warnLogs = listAppender.list.stream()
 			.filter(event -> event.getLevel() == Level.WARN)
-			.toList();
+			.collect(java.util.stream.Collectors.toList());
 
 		assertThat(warnLogs).isNotEmpty();
 		assertThat(warnLogs.get(0).getFormattedMessage())
@@ -184,19 +186,19 @@ class AcpClientSessionLogTest {
 		MockAcpClientTransport transport = new MockAcpClientTransport();
 
 		// Create session with a handler
-		Map<String, AcpClientSession.RequestHandler<?>> handlers = Map.of(
+		Map<String, AcpClientSession.RequestHandler<?>> handlers = TestUtil.mapOf(
 				"test/method",
 				params -> reactor.core.publisher.Mono.just("response")
 		);
 
-		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, handlers, Map.of(), Function.identity());
+		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, handlers, Collections.emptyMap(), Function.identity());
 
 		// Simulate incoming request
 		AcpSchema.JSONRPCRequest request = new AcpSchema.JSONRPCRequest(
 				AcpSchema.JSONRPC_VERSION,
 				"test-id",
 				"test/method",
-				Map.of("key", "value")
+				TestUtil.mapOf("key", "value")
 		);
 		transport.simulateIncomingMessage(request);
 
@@ -207,7 +209,7 @@ class AcpClientSessionLogTest {
 		List<ILoggingEvent> debugLogs = listAppender.list.stream()
 			.filter(event -> event.getLevel() == Level.DEBUG)
 			.filter(event -> event.getMessage().contains("Invoking handler"))
-			.toList();
+			.collect(java.util.stream.Collectors.toList());
 
 		assertThat(debugLogs)
 			.describedAs("Expected DEBUG log when handler invoked")
@@ -227,12 +229,12 @@ class AcpClientSessionLogTest {
 		MockAcpClientTransport transport = new MockAcpClientTransport();
 
 		// Create session with a handler
-		Map<String, AcpClientSession.RequestHandler<?>> handlers = Map.of(
+		Map<String, AcpClientSession.RequestHandler<?>> handlers = TestUtil.mapOf(
 				"test/method",
 				params -> reactor.core.publisher.Mono.just("response")
 		);
 
-		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, handlers, Map.of(), Function.identity());
+		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, handlers, Collections.emptyMap(), Function.identity());
 
 		// Simulate incoming request
 		AcpSchema.JSONRPCRequest request = new AcpSchema.JSONRPCRequest(
@@ -250,7 +252,7 @@ class AcpClientSessionLogTest {
 		List<ILoggingEvent> debugLogs = listAppender.list.stream()
 			.filter(event -> event.getLevel() == Level.DEBUG)
 			.filter(event -> event.getMessage().contains("completed successfully"))
-			.toList();
+			.collect(java.util.stream.Collectors.toList());
 
 		assertThat(debugLogs)
 			.describedAs("Expected DEBUG log when handler completes successfully")
@@ -267,12 +269,12 @@ class AcpClientSessionLogTest {
 		MockAcpClientTransport transport = new MockAcpClientTransport();
 
 		// Create session with some handlers
-		Map<String, AcpClientSession.RequestHandler<?>> handlers = Map.of(
+		Map<String, AcpClientSession.RequestHandler<?>> handlers = TestUtil.mapOf(
 				"registered/method1", params -> reactor.core.publisher.Mono.just("r1"),
 				"registered/method2", params -> reactor.core.publisher.Mono.just("r2")
 		);
 
-		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, handlers, Map.of(), Function.identity());
+		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, handlers, Collections.emptyMap(), Function.identity());
 
 		// Simulate incoming request for unknown method
 		AcpSchema.JSONRPCRequest request = new AcpSchema.JSONRPCRequest(
@@ -290,7 +292,7 @@ class AcpClientSessionLogTest {
 		List<ILoggingEvent> traceLogs = listAppender.list.stream()
 			.filter(event -> event.getLevel() == Level.TRACE)
 			.filter(event -> event.getMessage().contains("Available handlers"))
-			.toList();
+			.collect(java.util.stream.Collectors.toList());
 
 		assertThat(traceLogs)
 			.describedAs("Expected TRACE log showing available handlers")

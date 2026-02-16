@@ -4,7 +4,10 @@
 
 package com.agentclientprotocol.sdk.test;
 
+import java.lang.reflect.Field;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -116,7 +119,7 @@ public class MockAcpAgent {
 	 * @return The list of initialize requests
 	 */
 	public List<AcpSchema.InitializeRequest> getReceivedInitRequests() {
-		return List.copyOf(receivedInitRequests);
+		return Collections.unmodifiableList(new ArrayList<AcpSchema.InitializeRequest>(receivedInitRequests));
 	}
 
 	/**
@@ -124,7 +127,7 @@ public class MockAcpAgent {
 	 * @return The list of new session requests
 	 */
 	public List<AcpSchema.NewSessionRequest> getReceivedNewSessionRequests() {
-		return List.copyOf(receivedNewSessionRequests);
+		return Collections.unmodifiableList(new ArrayList<AcpSchema.NewSessionRequest>(receivedNewSessionRequests));
 	}
 
 	/**
@@ -132,7 +135,7 @@ public class MockAcpAgent {
 	 * @return The list of prompts
 	 */
 	public List<AcpSchema.PromptRequest> getReceivedPrompts() {
-		return List.copyOf(receivedPrompts);
+		return Collections.unmodifiableList(new ArrayList<AcpSchema.PromptRequest>(receivedPrompts));
 	}
 
 	/**
@@ -140,7 +143,7 @@ public class MockAcpAgent {
 	 * @return The list of cancellations
 	 */
 	public List<AcpSchema.CancelNotification> getReceivedCancellations() {
-		return List.copyOf(receivedCancellations);
+		return Collections.unmodifiableList(new ArrayList<AcpSchema.CancelNotification>(receivedCancellations));
 	}
 
 	/**
@@ -192,7 +195,7 @@ public class MockAcpAgent {
 		private Builder(AcpAgentTransport transport) {
 			this.transport = transport;
 			// Set defaults
-			this.initializeResponse = new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of());
+			this.initializeResponse = new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), null);
 			this.newSessionResponse = new AcpSchema.NewSessionResponse("mock-session", null, null);
 			this.promptResponseProvider = request -> new AcpSchema.PromptResponse(AcpSchema.StopReason.END_TURN);
 		}
@@ -267,7 +270,7 @@ public class MockAcpAgent {
 
 			// Replace the delegate using reflection (a bit ugly but avoids circular reference issues)
 			try {
-				var field = MockAcpAgent.class.getDeclaredField("delegate");
+				Field field = MockAcpAgent.class.getDeclaredField("delegate");
 				field.setAccessible(true);
 				field.set(mockAgent, delegate);
 			}

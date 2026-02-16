@@ -5,14 +5,16 @@
 package com.agentclientprotocol.sdk.agent;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Builder for terminal command execution via the convenience API.
  *
  * <p>
- * This record allows configuring command execution with options like
+ * This class allows configuring command execution with options like
  * working directory, environment variables, and output limits.
  *
  * <p>
@@ -25,27 +27,50 @@ import java.util.Map;
  * CommandResult result = context.execute(
  *     Command.of("make", "build")
  *         .cwd("/workspace")
- *         .env(Map.of("DEBUG", "true"))
- *         .outputLimit(10000));
+ *         .env(Collections.singletonMap("DEBUG", "true"))
+ *         .outputByteLimit(10000));
  * }</pre>
  *
- * @param executable The command to execute
- * @param args The arguments to pass to the command
- * @param cwd The working directory (null for default)
- * @param env Environment variables to set (null for default)
- * @param outputByteLimit Maximum bytes of output to capture (null for default)
  * @author Mark Pollack
  * @since 0.9.2
  * @see SyncPromptContext#execute(Command)
  * @see PromptContext#execute(Command)
  */
-public record Command(
-		String executable,
-		List<String> args,
-		String cwd,
-		Map<String, String> env,
-		Long outputByteLimit
-) {
+public final class Command {
+
+	private final String executable;
+	private final List<String> args;
+	private final String cwd;
+	private final Map<String, String> env;
+	private final Long outputByteLimit;
+
+	public Command(String executable, List<String> args, String cwd, Map<String, String> env, Long outputByteLimit) {
+		this.executable = executable;
+		this.args = args;
+		this.cwd = cwd;
+		this.env = env;
+		this.outputByteLimit = outputByteLimit;
+	}
+
+	public String executable() {
+		return this.executable;
+	}
+
+	public List<String> args() {
+		return this.args;
+	}
+
+	public String cwd() {
+		return this.cwd;
+	}
+
+	public Map<String, String> env() {
+		return this.env;
+	}
+
+	public Long outputByteLimit() {
+		return this.outputByteLimit;
+	}
 
 	/**
 	 * Creates a Command from command-line arguments.
@@ -61,7 +86,7 @@ public record Command(
 				commandAndArgs[0],
 				commandAndArgs.length > 1
 						? Arrays.asList(commandAndArgs).subList(1, commandAndArgs.length)
-						: List.of(),
+						: Collections.<String>emptyList(),
 				null, null, null);
 	}
 
@@ -90,6 +115,27 @@ public record Command(
 	 */
 	public Command outputByteLimit(long limit) {
 		return new Command(executable, args, cwd, env, limit);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Command that = (Command) o;
+		return Objects.equals(executable, that.executable) && Objects.equals(args, that.args)
+				&& Objects.equals(cwd, that.cwd) && Objects.equals(env, that.env)
+				&& Objects.equals(outputByteLimit, that.outputByteLimit);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(executable, args, cwd, env, outputByteLimit);
+	}
+
+	@Override
+	public String toString() {
+		return "Command[executable=" + executable + ", args=" + args + ", cwd=" + cwd
+				+ ", env=" + env + ", outputByteLimit=" + outputByteLimit + "]";
 	}
 
 }

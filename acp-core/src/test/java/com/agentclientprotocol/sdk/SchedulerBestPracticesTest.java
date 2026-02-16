@@ -69,7 +69,7 @@ class SchedulerBestPracticesTest {
 				.filter(p -> p.toString().endsWith(".java"))
 				.forEach(path -> {
 					try {
-						String content = Files.readString(path);
+						String content = new String(Files.readAllBytes(path), java.nio.charset.StandardCharsets.UTF_8);
 						String[] lines = content.split("\n");
 						int lineNum = 0;
 						for (String line : lines) {
@@ -116,7 +116,7 @@ class SchedulerBestPracticesTest {
 				.filter(p -> p.toString().endsWith(".java"))
 				.forEach(path -> {
 					try {
-						String content = Files.readString(path);
+						String content = new String(Files.readAllBytes(path), java.nio.charset.StandardCharsets.UTF_8);
 						Matcher matcher = pattern.matcher(content);
 						if (matcher.find()) {
 							int lineNumber = getLineNumber(content, matcher.start());
@@ -160,7 +160,7 @@ class SchedulerBestPracticesTest {
 				.filter(p -> p.toString().endsWith(".java"))
 				.forEach(path -> {
 					try {
-						String content = Files.readString(path);
+						String content = new String(Files.readAllBytes(path), java.nio.charset.StandardCharsets.UTF_8);
 
 						Matcher m1 = singleThread.matcher(content);
 						while (m1.find()) {
@@ -205,7 +205,7 @@ class SchedulerBestPracticesTest {
 			.describedAs("AcpClient.java should exist")
 			.exists();
 
-		String content = Files.readString(acpClientPath);
+		String content = new String(Files.readAllBytes(acpClientPath), java.nio.charset.StandardCharsets.UTF_8);
 
 		// Verify SYNC_HANDLER_SCHEDULER is defined
 		assertThat(content)
@@ -229,7 +229,7 @@ class SchedulerBestPracticesTest {
 	@Test
 	void transportSchedulersUseDaemonThreads() throws IOException {
 		// List of transport files that should use daemon threads
-		List<String> transportFiles = List.of(
+		List<String> transportFiles = java.util.Arrays.asList(
 				"com/agentclientprotocol/sdk/client/transport/StdioAcpClientTransport.java",
 				"com/agentclientprotocol/sdk/agent/transport/StdioAcpAgentTransport.java"
 		);
@@ -237,7 +237,7 @@ class SchedulerBestPracticesTest {
 		for (String transportFile : transportFiles) {
 			Path path = SOURCE_ROOT.resolve(transportFile);
 			if (Files.exists(path)) {
-				String content = Files.readString(path);
+				String content = new String(Files.readAllBytes(path), java.nio.charset.StandardCharsets.UTF_8);
 
 				// If it creates schedulers, it should use daemon threads
 				if (content.contains("Schedulers.fromExecutorService")) {
@@ -288,7 +288,7 @@ class SchedulerBestPracticesTest {
 				.filter(p -> p.toString().endsWith(".java"))
 				.forEach(path -> {
 					try {
-						String content = Files.readString(path);
+						String content = new String(Files.readAllBytes(path), java.nio.charset.StandardCharsets.UTF_8);
 						String[] lines = content.split("\n");
 						int lineNum = 0;
 						for (String line : lines) {
@@ -369,7 +369,7 @@ class SchedulerBestPracticesTest {
 
 		// Files that are known to use properly configured executors (not ForkJoinPool.commonPool)
 		// WebSocket transports configure HttpClient with custom executor, so they're safe
-		List<String> excludedFiles = List.of(
+		List<String> excludedFiles = java.util.Arrays.asList(
 			"WebSocketAcpClientTransport.java",
 			"WebSocketAcpAgentTransport.java"
 		);
@@ -380,7 +380,7 @@ class SchedulerBestPracticesTest {
 				.filter(p -> excludedFiles.stream().noneMatch(exc -> p.toString().endsWith(exc)))
 				.forEach(path -> {
 					try {
-						String content = Files.readString(path);
+						String content = new String(Files.readAllBytes(path), java.nio.charset.StandardCharsets.UTF_8);
 						String[] lines = content.split("\n");
 						int lineNum = 0;
 						for (String line : lines) {

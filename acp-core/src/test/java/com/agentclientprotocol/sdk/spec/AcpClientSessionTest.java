@@ -5,11 +5,13 @@
 package com.agentclientprotocol.sdk.spec;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
 import com.agentclientprotocol.sdk.MockAcpClientTransport;
-import io.modelcontextprotocol.json.TypeRef;
+import com.agentclientprotocol.sdk.json.TypeRef;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +20,7 @@ import reactor.core.publisher.Sinks;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import com.agentclientprotocol.sdk.TestUtil;
 
 /**
  * Test suite for {@link AcpClientSession} that verifies its JSON-RPC message handling,
@@ -38,7 +41,7 @@ class AcpClientSessionTest {
 
 	private static final String ECHO_METHOD = "echo";
 
-	TypeRef<String> responseType = new TypeRef<>() {
+	TypeRef<String> responseType = new TypeRef<String>() {
 	};
 
 	@Test
@@ -46,9 +49,9 @@ class AcpClientSessionTest {
 		String testParam = "test parameter";
 		String responseData = "test response";
 
-		var transport = new MockAcpClientTransport();
-		var session = new AcpClientSession(TIMEOUT, transport, Map.of(),
-				Map.of(TEST_NOTIFICATION, params -> Mono.fromRunnable(() -> logger.info("Status update: {}", params))),
+		MockAcpClientTransport transport = new MockAcpClientTransport();
+		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, Collections.emptyMap(),
+				TestUtil.mapOf(TEST_NOTIFICATION, params -> Mono.fromRunnable(() -> logger.info("Status update: {}", params))),
 				Function.identity());
 
 		// Create a Mono that will emit the response after the request is sent
@@ -74,9 +77,9 @@ class AcpClientSessionTest {
 
 	@Test
 	void testSendRequestWithError() {
-		var transport = new MockAcpClientTransport();
-		var session = new AcpClientSession(TIMEOUT, transport, Map.of(),
-				Map.of(TEST_NOTIFICATION, params -> Mono.fromRunnable(() -> logger.info("Status update: {}", params))),
+		MockAcpClientTransport transport = new MockAcpClientTransport();
+		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, Collections.emptyMap(),
+				TestUtil.mapOf(TEST_NOTIFICATION, params -> Mono.fromRunnable(() -> logger.info("Status update: {}", params))),
 				Function.identity());
 
 		Mono<String> responseMono = session.sendRequest(TEST_METHOD, "test", responseType);
@@ -95,9 +98,9 @@ class AcpClientSessionTest {
 
 	@Test
 	void testRequestTimeout() {
-		var transport = new MockAcpClientTransport();
-		var session = new AcpClientSession(TIMEOUT, transport, Map.of(),
-				Map.of(TEST_NOTIFICATION, params -> Mono.fromRunnable(() -> logger.info("Status update: {}", params))),
+		MockAcpClientTransport transport = new MockAcpClientTransport();
+		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, Collections.emptyMap(),
+				TestUtil.mapOf(TEST_NOTIFICATION, params -> Mono.fromRunnable(() -> logger.info("Status update: {}", params))),
 				Function.identity());
 
 		Mono<String> responseMono = session.sendRequest(TEST_METHOD, "test", responseType);
@@ -112,12 +115,12 @@ class AcpClientSessionTest {
 
 	@Test
 	void testSendNotification() {
-		var transport = new MockAcpClientTransport();
-		var session = new AcpClientSession(TIMEOUT, transport, Map.of(),
-				Map.of(TEST_NOTIFICATION, params -> Mono.fromRunnable(() -> logger.info("Status update: {}", params))),
+		MockAcpClientTransport transport = new MockAcpClientTransport();
+		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, Collections.emptyMap(),
+				TestUtil.mapOf(TEST_NOTIFICATION, params -> Mono.fromRunnable(() -> logger.info("Status update: {}", params))),
 				Function.identity());
 
-		Map<String, Object> params = Map.of("key", "value");
+		Map<String, Object> params = TestUtil.mapOf("key", "value");
 		Mono<Void> notificationMono = session.sendNotification(TEST_NOTIFICATION, params);
 
 		// Verify notification was sent
@@ -135,10 +138,10 @@ class AcpClientSessionTest {
 	@Test
 	void testRequestHandling() {
 		String echoMessage = "Hello ACP!";
-		Map<String, AcpClientSession.RequestHandler<?>> requestHandlers = Map.of(ECHO_METHOD,
+		Map<String, AcpClientSession.RequestHandler<?>> requestHandlers = TestUtil.mapOf(ECHO_METHOD,
 				params -> Mono.just(params));
-		var transport = new MockAcpClientTransport();
-		var session = new AcpClientSession(TIMEOUT, transport, requestHandlers, Map.of(), Function.identity());
+		MockAcpClientTransport transport = new MockAcpClientTransport();
+		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, requestHandlers, Collections.emptyMap(), Function.identity());
 
 		// Simulate incoming request
 		AcpSchema.JSONRPCRequest request = new AcpSchema.JSONRPCRequest(AcpSchema.JSONRPC_VERSION, "test-id",
@@ -167,13 +170,13 @@ class AcpClientSessionTest {
 	void testNotificationHandling() {
 		Sinks.One<Object> receivedParams = Sinks.one();
 
-		var transport = new MockAcpClientTransport();
-		var session = new AcpClientSession(TIMEOUT, transport, Map.of(),
-				Map.of(TEST_NOTIFICATION, params -> Mono.fromRunnable(() -> receivedParams.tryEmitValue(params))),
+		MockAcpClientTransport transport = new MockAcpClientTransport();
+		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, Collections.emptyMap(),
+				TestUtil.mapOf(TEST_NOTIFICATION, params -> Mono.fromRunnable(() -> receivedParams.tryEmitValue(params))),
 				Function.identity());
 
 		// Simulate incoming notification from the agent
-		Map<String, Object> notificationParams = Map.of("status", "ready");
+		Map<String, Object> notificationParams = TestUtil.mapOf("status", "ready");
 
 		AcpSchema.JSONRPCNotification notification = new AcpSchema.JSONRPCNotification(AcpSchema.JSONRPC_VERSION,
 				TEST_NOTIFICATION, notificationParams);
@@ -188,9 +191,9 @@ class AcpClientSessionTest {
 
 	@Test
 	void testUnknownMethodHandling() {
-		var transport = new MockAcpClientTransport();
-		var session = new AcpClientSession(TIMEOUT, transport, Map.of(),
-				Map.of(TEST_NOTIFICATION, params -> Mono.fromRunnable(() -> logger.info("Status update: {}", params))),
+		MockAcpClientTransport transport = new MockAcpClientTransport();
+		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, Collections.emptyMap(),
+				TestUtil.mapOf(TEST_NOTIFICATION, params -> Mono.fromRunnable(() -> logger.info("Status update: {}", params))),
 				Function.identity());
 
 		// Simulate incoming request for unknown method
@@ -223,8 +226,8 @@ class AcpClientSessionTest {
 		RuntimeException exception = new RuntimeException("Something went wrong");
 		AcpClientSession.RequestHandler<?> failingHandler = params -> Mono.error(exception);
 
-		var transport = new MockAcpClientTransport();
-		var session = new AcpClientSession(TIMEOUT, transport, Map.of(testMethod, failingHandler), Map.of(),
+		MockAcpClientTransport transport = new MockAcpClientTransport();
+		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, TestUtil.mapOf(testMethod, failingHandler), Collections.emptyMap(),
 				Function.identity());
 
 		// Simulate incoming request that will trigger the error
@@ -260,8 +263,8 @@ class AcpClientSessionTest {
 		RuntimeException topException = new RuntimeException("Top level message", middleCause);
 		AcpClientSession.RequestHandler<?> failingHandler = params -> Mono.error(topException);
 
-		var transport = new MockAcpClientTransport();
-		var session = new AcpClientSession(TIMEOUT, transport, Map.of(testMethod, failingHandler), Map.of(),
+		MockAcpClientTransport transport = new MockAcpClientTransport();
+		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, TestUtil.mapOf(testMethod, failingHandler), Collections.emptyMap(),
 				Function.identity());
 
 		// Simulate incoming request that will trigger the error
@@ -290,9 +293,9 @@ class AcpClientSessionTest {
 
 	@Test
 	void testGracefulShutdown() {
-		var transport = new MockAcpClientTransport();
-		var session = new AcpClientSession(TIMEOUT, transport, Map.of(),
-				Map.of(TEST_NOTIFICATION, params -> Mono.fromRunnable(() -> logger.info("Status update: {}", params))),
+		MockAcpClientTransport transport = new MockAcpClientTransport();
+		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, Collections.emptyMap(),
+				TestUtil.mapOf(TEST_NOTIFICATION, params -> Mono.fromRunnable(() -> logger.info("Status update: {}", params))),
 				Function.identity());
 
 		StepVerifier.create(session.closeGracefully()).verifyComplete();
@@ -300,9 +303,9 @@ class AcpClientSessionTest {
 
 	@Test
 	void testConcurrentRequests() {
-		var transport = new MockAcpClientTransport();
-		var session = new AcpClientSession(TIMEOUT, transport, Map.of(),
-				Map.of(TEST_NOTIFICATION, params -> Mono.fromRunnable(() -> logger.info("Status update: {}", params))),
+		MockAcpClientTransport transport = new MockAcpClientTransport();
+		AcpClientSession session = new AcpClientSession(TIMEOUT, transport, Collections.emptyMap(),
+				TestUtil.mapOf(TEST_NOTIFICATION, params -> Mono.fromRunnable(() -> logger.info("Status update: {}", params))),
 				Function.identity());
 
 		// Send 5 concurrent requests
@@ -323,12 +326,12 @@ class AcpClientSessionTest {
 
 		// Simulate responses in different order
 		StepVerifier.create(combined).then(() -> {
-			var messages = transport.getSentMessages();
+			List<AcpSchema.JSONRPCMessage> messages = transport.getSentMessages();
 			assertThat(messages).hasSize(5);
 
 			// Respond in reverse order to test correlation
 			for (int i = messages.size() - 1; i >= 0; i--) {
-				var request = (AcpSchema.JSONRPCRequest) messages.get(i);
+				AcpSchema.JSONRPCRequest request = (AcpSchema.JSONRPCRequest) messages.get(i);
 				transport.simulateIncomingMessage(new AcpSchema.JSONRPCResponse(AcpSchema.JSONRPC_VERSION,
 						request.id(), "response" + (i + 1), null));
 			}

@@ -111,11 +111,11 @@ public final class AcpHandlerMethod {
 		}
 		catch (InvocationTargetException e) {
 			Throwable cause = e.getCause();
-			if (cause instanceof Exception ex) {
-				throw ex;
+			if (cause instanceof Exception) {
+				throw (Exception) cause;
 			}
-			if (cause instanceof Error err) {
-				throw err;
+			if (cause instanceof Error) {
+				throw (Error) cause;
 			}
 			throw new RuntimeException(cause);
 		}

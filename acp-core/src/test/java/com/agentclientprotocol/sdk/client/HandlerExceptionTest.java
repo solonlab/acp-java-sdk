@@ -11,6 +11,7 @@ import com.agentclientprotocol.sdk.spec.AcpSchema;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import com.agentclientprotocol.sdk.TestUtil;
 
 /**
  * Tests that handler exceptions are properly converted to JSON-RPC error responses.
@@ -41,7 +42,7 @@ class HandlerExceptionTest {
                 AcpSchema.JSONRPC_VERSION,
                 "test-id",
                 AcpSchema.METHOD_FS_READ_TEXT_FILE,
-                Map.of("sessionId", "session-123", "path", "/nonexistent.txt")
+                TestUtil.mapOf("sessionId", "session-123", "path", "/nonexistent.txt")
         );
         transport.simulateIncomingMessage(request);
 
@@ -82,7 +83,7 @@ class HandlerExceptionTest {
                 AcpSchema.JSONRPC_VERSION,
                 "test-id-2",
                 AcpSchema.METHOD_FS_WRITE_TEXT_FILE,
-                Map.of("sessionId", "session-123", "path", "/readonly/file.txt", "content", "test")
+                TestUtil.mapOf("sessionId", "session-123", "path", "/readonly/file.txt", "content", "test")
         );
         transport.simulateIncomingMessage(request);
 

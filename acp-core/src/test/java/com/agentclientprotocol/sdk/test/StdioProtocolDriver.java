@@ -12,8 +12,8 @@ import java.util.function.BiConsumer;
 import com.agentclientprotocol.sdk.agent.transport.StdioAcpAgentTransport;
 import com.agentclientprotocol.sdk.spec.AcpAgentTransport;
 import com.agentclientprotocol.sdk.spec.AcpClientTransport;
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.json.TypeRef;
+import com.agentclientprotocol.sdk.json.McpJsonMapper;
+import com.agentclientprotocol.sdk.json.TypeRef;
 import reactor.core.publisher.Mono;
 
 /**
@@ -102,7 +102,7 @@ public class StdioProtocolDriver implements ProtocolDriver {
 
 		@Override
 		public java.util.List<Integer> protocolVersions() {
-			return java.util.List.of(com.agentclientprotocol.sdk.spec.AcpSchema.LATEST_PROTOCOL_VERSION);
+			return java.util.Arrays.asList(com.agentclientprotocol.sdk.spec.AcpSchema.LATEST_PROTOCOL_VERSION);
 		}
 
 		@Override

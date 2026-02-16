@@ -4,6 +4,7 @@
 
 package com.agentclientprotocol.sdk.client.transport;
 
+import java.util.Collections;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.agentclientprotocol.sdk.TestUtil;
 
 /**
  * Test suite for {@link AgentParameters} builder and configuration.
@@ -121,7 +123,7 @@ class AgentParametersTest {
 
 	@Test
 	void testBuilderWithEnvironmentMap() {
-		Map<String, String> envMap = Map.of("API_KEY", "test-key-123", "MODEL", "gemini-1.5-pro");
+		Map<String, String> envMap = TestUtil.mapOf("API_KEY", "test-key-123", "MODEL", "gemini-1.5-pro");
 
 		AgentParameters params = AgentParameters.builder("gemini").env(envMap).build();
 
@@ -153,7 +155,7 @@ class AgentParametersTest {
 	@Test
 	void testBuilderWithEmptyEnvMap() {
 		// Empty env map should be handled gracefully (no exception)
-		AgentParameters params = AgentParameters.builder("gemini").env(Map.of()).build();
+		AgentParameters params = AgentParameters.builder("gemini").env(Collections.emptyMap()).build();
 
 		assertThat(params.getEnv()).isNotEmpty(); // Should still have default env vars
 	}
@@ -215,7 +217,7 @@ class AgentParametersTest {
 			.arg("--temperature")
 			.arg("0.7")
 			.addEnvVar("API_KEY", "key123")
-			.env(Map.of("DEBUG", "true"))
+			.env(TestUtil.mapOf("DEBUG", "true"))
 			.addEnvVar("LOG_LEVEL", "info")
 			.build();
 

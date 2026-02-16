@@ -8,8 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.json.TypeRef;
+import com.agentclientprotocol.sdk.json.McpJsonMapper;
+import com.agentclientprotocol.sdk.json.TypeRef;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,7 +43,7 @@ class SessionUpdateDeserializationTest {
 			if (is == null) {
 				throw new IOException("Golden file not found: " + path);
 			}
-			return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+			java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream(); byte[] buf = new byte[4096]; int len; while ((len = is.read(buf)) != -1) { baos.write(buf, 0, len); } return new String(baos.toByteArray(), StandardCharsets.UTF_8);
 		}
 	}
 

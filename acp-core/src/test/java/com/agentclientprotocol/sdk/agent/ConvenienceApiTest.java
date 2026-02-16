@@ -5,6 +5,7 @@
 package com.agentclientprotocol.sdk.agent;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import com.agentclientprotocol.sdk.TestUtil;
 
 /**
  * Tests for the convenience API methods on {@link SyncPromptContext} and {@link PromptContext}.
@@ -95,8 +97,8 @@ class ConvenienceApiTest {
 		Thread.sleep(100);
 
 		client.initialize(new InitializeRequest(1, new ClientCapabilities())).block(TIMEOUT);
-		client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-		client.prompt(new PromptRequest("test-session-123", List.of(new TextContent("test")))).block(TIMEOUT);
+		client.newSession(new NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
+		client.prompt(new PromptRequest("test-session-123", java.util.Arrays.asList(new TextContent("test")))).block(TIMEOUT);
 
 		assertThat(capturedSessionId.get()).isEqualTo("test-session-123");
 
@@ -136,8 +138,8 @@ class ConvenienceApiTest {
 		Thread.sleep(100);
 
 		client.initialize(new InitializeRequest(1, new ClientCapabilities())).block(TIMEOUT);
-		client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-		client.prompt(new PromptRequest("msg-session", List.of(new TextContent("test")))).block(TIMEOUT);
+		client.newSession(new NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
+		client.prompt(new PromptRequest("msg-session", java.util.Arrays.asList(new TextContent("test")))).block(TIMEOUT);
 
 		assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
 		assertThat(receivedUpdates).hasSize(1);
@@ -177,8 +179,8 @@ class ConvenienceApiTest {
 		Thread.sleep(100);
 
 		client.initialize(new InitializeRequest(1, new ClientCapabilities())).block(TIMEOUT);
-		client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-		client.prompt(new PromptRequest("thought-session", List.of(new TextContent("test")))).block(TIMEOUT);
+		client.newSession(new NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
+		client.prompt(new PromptRequest("thought-session", java.util.Arrays.asList(new TextContent("test")))).block(TIMEOUT);
 
 		assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
 		assertThat(receivedUpdates).hasSize(1);
@@ -223,8 +225,8 @@ class ConvenienceApiTest {
 		FileSystemCapability fsCaps = new FileSystemCapability(true, false);
 		ClientCapabilities clientCaps = new ClientCapabilities(fsCaps, false);
 		client.initialize(new InitializeRequest(1, clientCaps)).block(TIMEOUT);
-		client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-		client.prompt(new PromptRequest("file-session", List.of(new TextContent("test")))).block(TIMEOUT);
+		client.newSession(new NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
+		client.prompt(new PromptRequest("file-session", java.util.Arrays.asList(new TextContent("test")))).block(TIMEOUT);
 
 		assertThat(readContent.get()).isEqualTo("File content here");
 
@@ -262,8 +264,8 @@ class ConvenienceApiTest {
 		FileSystemCapability fsCaps = new FileSystemCapability(false, true);
 		ClientCapabilities clientCaps = new ClientCapabilities(fsCaps, false);
 		client.initialize(new InitializeRequest(1, clientCaps)).block(TIMEOUT);
-		client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-		client.prompt(new PromptRequest("write-session", List.of(new TextContent("test")))).block(TIMEOUT);
+		client.newSession(new NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
+		client.prompt(new PromptRequest("write-session", java.util.Arrays.asList(new TextContent("test")))).block(TIMEOUT);
 
 		assertThat(writtenPath.get()).isEqualTo("/output/result.txt");
 		assertThat(writtenContent.get()).isEqualTo("Generated content");
@@ -281,7 +283,7 @@ class ConvenienceApiTest {
 			.initializeHandler(req -> InitializeResponse.ok())
 			.newSessionHandler(req -> new NewSessionResponse("try-read-session", null, null))
 			.promptHandler((request, context) -> {
-				var result = context.tryReadFile("/nonexistent.txt");
+				java.util.Optional<String> result = context.tryReadFile("/nonexistent.txt");
 				resultPresent.set(result.isPresent());
 				return PromptResponse.endTurn();
 			})
@@ -298,8 +300,8 @@ class ConvenienceApiTest {
 		FileSystemCapability fsCaps = new FileSystemCapability(true, false);
 		ClientCapabilities clientCaps = new ClientCapabilities(fsCaps, false);
 		client.initialize(new InitializeRequest(1, clientCaps)).block(TIMEOUT);
-		client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-		client.prompt(new PromptRequest("try-read-session", List.of(new TextContent("test")))).block(TIMEOUT);
+		client.newSession(new NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
+		client.prompt(new PromptRequest("try-read-session", java.util.Arrays.asList(new TextContent("test")))).block(TIMEOUT);
 
 		assertThat(resultPresent.get()).isFalse();
 
@@ -338,8 +340,8 @@ class ConvenienceApiTest {
 		Thread.sleep(100);
 
 		client.initialize(new InitializeRequest(1, new ClientCapabilities())).block(TIMEOUT);
-		client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-		client.prompt(new PromptRequest("perm-session", List.of(new TextContent("test")))).block(TIMEOUT);
+		client.newSession(new NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
+		client.prompt(new PromptRequest("perm-session", java.util.Arrays.asList(new TextContent("test")))).block(TIMEOUT);
 
 		assertThat(permissionResult.get()).isTrue();
 
@@ -371,8 +373,8 @@ class ConvenienceApiTest {
 		Thread.sleep(100);
 
 		client.initialize(new InitializeRequest(1, new ClientCapabilities())).block(TIMEOUT);
-		client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-		client.prompt(new PromptRequest("deny-session", List.of(new TextContent("test")))).block(TIMEOUT);
+		client.newSession(new NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
+		client.prompt(new PromptRequest("deny-session", java.util.Arrays.asList(new TextContent("test")))).block(TIMEOUT);
 
 		assertThat(permissionResult.get()).isFalse();
 
@@ -412,8 +414,8 @@ class ConvenienceApiTest {
 		Thread.sleep(100);
 
 		client.initialize(new InitializeRequest(1, new ClientCapabilities())).block(TIMEOUT);
-		client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-		client.prompt(new PromptRequest("choice-session", List.of(new TextContent("test")))).block(TIMEOUT);
+		client.newSession(new NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
+		client.prompt(new PromptRequest("choice-session", java.util.Arrays.asList(new TextContent("test")))).block(TIMEOUT);
 
 		assertThat(choiceResult.get()).isEqualTo("Skip");
 
@@ -463,8 +465,8 @@ class ConvenienceApiTest {
 
 		ClientCapabilities clientCaps = new ClientCapabilities(null, true);
 		client.initialize(new InitializeRequest(1, clientCaps)).block(TIMEOUT);
-		client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-		client.prompt(new PromptRequest("exec-session", List.of(new TextContent("test")))).block(TIMEOUT);
+		client.newSession(new NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
+		client.prompt(new PromptRequest("exec-session", java.util.Arrays.asList(new TextContent("test")))).block(TIMEOUT);
 
 		assertThat(cmdResult.get()).isNotNull();
 		assertThat(cmdResult.get().output()).isEqualTo("hello\n");
@@ -506,8 +508,8 @@ class ConvenienceApiTest {
 
 		ClientCapabilities clientCaps = new ClientCapabilities(null, true);
 		client.initialize(new InitializeRequest(1, clientCaps)).block(TIMEOUT);
-		client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-		client.prompt(new PromptRequest("cmd-session", List.of(new TextContent("test")))).block(TIMEOUT);
+		client.newSession(new NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
+		client.prompt(new PromptRequest("cmd-session", java.util.Arrays.asList(new TextContent("test")))).block(TIMEOUT);
 
 		assertThat(capturedCwd.get()).isEqualTo("/project");
 
@@ -553,8 +555,8 @@ class ConvenienceApiTest {
 
 		ClientCapabilities clientCaps = new ClientCapabilities(null, true);
 		client.initialize(new InitializeRequest(1, clientCaps)).block(TIMEOUT);
-		client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-		client.prompt(new PromptRequest("release-test", List.of(new TextContent("test")))).block(TIMEOUT);
+		client.newSession(new NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
+		client.prompt(new PromptRequest("release-test", java.util.Arrays.asList(new TextContent("test")))).block(TIMEOUT);
 
 		// Verify that releaseTerminal was called before execute() returned
 		assertThat(releaseCalledBeforeReturn.get())
@@ -619,7 +621,7 @@ class ConvenienceApiTest {
 	void commandBuildersReturnNewInstances() {
 		Command original = Command.of("make");
 		Command withCwd = original.cwd("/project");
-		Command withEnv = original.env(Map.of("DEBUG", "true"));
+		Command withEnv = original.env(TestUtil.mapOf("DEBUG", "true"));
 
 		assertThat(withCwd).isNotSameAs(original);
 		assertThat(withCwd.cwd()).isEqualTo("/project");

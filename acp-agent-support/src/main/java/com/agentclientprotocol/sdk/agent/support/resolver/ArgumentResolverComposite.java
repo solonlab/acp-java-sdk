@@ -5,6 +5,7 @@
 package com.agentclientprotocol.sdk.agent.support.resolver;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -69,7 +70,7 @@ public class ArgumentResolverComposite implements ArgumentResolver {
 	 * @return unmodifiable list of resolvers
 	 */
 	public List<ArgumentResolver> getResolvers() {
-		return List.copyOf(resolvers);
+		return Collections.unmodifiableList(new ArrayList<ArgumentResolver>(resolvers));
 	}
 
 	/**

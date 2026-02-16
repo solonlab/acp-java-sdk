@@ -6,7 +6,7 @@ package com.agentclientprotocol.sdk.spec;
 
 import java.io.IOException;
 
-import io.modelcontextprotocol.json.McpJsonMapper;
+import com.agentclientprotocol.sdk.json.McpJsonMapper;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,14 +29,12 @@ class AcpJsonRpcMessageTest {
 
 	@Test
 	void deserializeJsonRpcRequest() throws IOException {
-		String json = """
-				{
-					"jsonrpc": "2.0",
-					"id": 1,
-					"method": "initialize",
-					"params": {"protocolVersion": 1}
-				}
-				""";
+		String json = "{\n" +
+			"	\"jsonrpc\": \"2.0\",\n" +
+			"	\"id\": 1,\n" +
+			"	\"method\": \"initialize\",\n" +
+			"	\"params\": {\"protocolVersion\": 1}\n" +
+			"}";
 
 		AcpSchema.JSONRPCMessage message = AcpSchema.deserializeJsonRpcMessage(jsonMapper, json);
 
@@ -50,14 +48,12 @@ class AcpJsonRpcMessageTest {
 
 	@Test
 	void deserializeJsonRpcRequestWithStringId() throws IOException {
-		String json = """
-				{
-					"jsonrpc": "2.0",
-					"id": "request-123",
-					"method": "session/prompt",
-					"params": {}
-				}
-				""";
+		String json = "{\n" +
+			"	\"jsonrpc\": \"2.0\",\n" +
+			"	\"id\": \"request-123\",\n" +
+			"	\"method\": \"session/prompt\",\n" +
+			"	\"params\": {}\n" +
+			"}";
 
 		AcpSchema.JSONRPCMessage message = AcpSchema.deserializeJsonRpcMessage(jsonMapper, json);
 
@@ -68,13 +64,11 @@ class AcpJsonRpcMessageTest {
 
 	@Test
 	void deserializeJsonRpcNotification() throws IOException {
-		String json = """
-				{
-					"jsonrpc": "2.0",
-					"method": "session/update",
-					"params": {"sessionId": "test"}
-				}
-				""";
+		String json = "{\n" +
+			"	\"jsonrpc\": \"2.0\",\n" +
+			"	\"method\": \"session/update\",\n" +
+			"	\"params\": {\"sessionId\": \"test\"}\n" +
+			"}";
 
 		AcpSchema.JSONRPCMessage message = AcpSchema.deserializeJsonRpcMessage(jsonMapper, json);
 
@@ -87,13 +81,11 @@ class AcpJsonRpcMessageTest {
 
 	@Test
 	void deserializeJsonRpcResponse() throws IOException {
-		String json = """
-				{
-					"jsonrpc": "2.0",
-					"id": 1,
-					"result": {"protocolVersion": 1}
-				}
-				""";
+		String json = "{\n" +
+			"	\"jsonrpc\": \"2.0\",\n" +
+			"	\"id\": 1,\n" +
+			"	\"result\": {\"protocolVersion\": 1}\n" +
+			"}";
 
 		AcpSchema.JSONRPCMessage message = AcpSchema.deserializeJsonRpcMessage(jsonMapper, json);
 
@@ -107,16 +99,14 @@ class AcpJsonRpcMessageTest {
 
 	@Test
 	void deserializeJsonRpcErrorResponse() throws IOException {
-		String json = """
-				{
-					"jsonrpc": "2.0",
-					"id": 1,
-					"error": {
-						"code": -32600,
-						"message": "Invalid Request"
-					}
-				}
-				""";
+		String json = "{\n" +
+			"	\"jsonrpc\": \"2.0\",\n" +
+			"	\"id\": 1,\n" +
+			"	\"error\": {\n" +
+			"		\"code\": -32600,\n" +
+			"		\"message\": \"Invalid Request\"\n" +
+			"	}\n" +
+			"}";
 
 		AcpSchema.JSONRPCMessage message = AcpSchema.deserializeJsonRpcMessage(jsonMapper, json);
 
@@ -139,12 +129,10 @@ class AcpJsonRpcMessageTest {
 
 	@Test
 	void deserializeUnknownMessageTypeThrowsException() {
-		String json = """
-				{
-					"jsonrpc": "2.0",
-					"unknownField": "value"
-				}
-				""";
+		String json = "{\n" +
+			"	\"jsonrpc\": \"2.0\",\n" +
+			"	\"unknownField\": \"value\"\n" +
+			"}";
 
 		assertThatThrownBy(() -> AcpSchema.deserializeJsonRpcMessage(jsonMapper, json))
 			.isInstanceOf(IllegalArgumentException.class)

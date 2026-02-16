@@ -5,6 +5,7 @@
 package com.agentclientprotocol.sdk.integration;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -66,7 +67,7 @@ class ErrorCodePropagationTest {
 		AcpAsyncAgent agent = AcpAgent.async(transportPair.agentTransport())
 			.requestTimeout(TIMEOUT)
 			.initializeHandler(request -> Mono
-				.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of())))
+				.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList())))
 			.newSessionHandler(request -> Mono.just(new AcpSchema.NewSessionResponse("session-123", null, null)))
 			.promptHandler((request, updater) -> {
 				// Throw INVALID_PARAMS error when prompt is received
@@ -81,11 +82,11 @@ class ErrorCodePropagationTest {
 		agent.start().subscribe();
 		Thread.sleep(100);
 		client.initialize(new AcpSchema.InitializeRequest(1, new AcpSchema.ClientCapabilities())).block(TIMEOUT);
-		client.newSession(new AcpSchema.NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
+		client.newSession(new AcpSchema.NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
 
 		// Send prompt - should receive INVALID_PARAMS error
 		assertThatThrownBy(() -> {
-			client.prompt(new AcpSchema.PromptRequest("session-123", List.of(new AcpSchema.TextContent("test"))))
+			client.prompt(new AcpSchema.PromptRequest("session-123", java.util.Arrays.asList(new AcpSchema.TextContent("test"))))
 				.block(TIMEOUT);
 		}).isInstanceOf(AcpClientSession.AcpError.class).satisfies(ex -> {
 			AcpClientSession.AcpError acpError = (AcpClientSession.AcpError) ex;
@@ -110,7 +111,7 @@ class ErrorCodePropagationTest {
 		AcpAsyncAgent agent = AcpAgent.async(transportPair.agentTransport())
 			.requestTimeout(TIMEOUT)
 			.initializeHandler(request -> Mono
-				.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of())))
+				.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList())))
 			.newSessionHandler(request -> Mono.just(new AcpSchema.NewSessionResponse("session-123", null, null)))
 			.promptHandler((request, updater) -> {
 				// Throw METHOD_NOT_FOUND error
@@ -125,11 +126,11 @@ class ErrorCodePropagationTest {
 		agent.start().subscribe();
 		Thread.sleep(100);
 		client.initialize(new AcpSchema.InitializeRequest(1, new AcpSchema.ClientCapabilities())).block(TIMEOUT);
-		client.newSession(new AcpSchema.NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
+		client.newSession(new AcpSchema.NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
 
 		// Send prompt - should receive METHOD_NOT_FOUND error
 		assertThatThrownBy(() -> {
-			client.prompt(new AcpSchema.PromptRequest("session-123", List.of(new AcpSchema.TextContent("test"))))
+			client.prompt(new AcpSchema.PromptRequest("session-123", java.util.Arrays.asList(new AcpSchema.TextContent("test"))))
 				.block(TIMEOUT);
 		}).isInstanceOf(AcpClientSession.AcpError.class).satisfies(ex -> {
 			AcpClientSession.AcpError acpError = (AcpClientSession.AcpError) ex;
@@ -153,7 +154,7 @@ class ErrorCodePropagationTest {
 		AcpAsyncAgent agent = AcpAgent.async(transportPair.agentTransport())
 			.requestTimeout(TIMEOUT)
 			.initializeHandler(request -> Mono
-				.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of())))
+				.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList())))
 			.newSessionHandler(request -> Mono.just(new AcpSchema.NewSessionResponse("session-123", null, null)))
 			.promptHandler((request, updater) -> {
 				// Throw CAPABILITY_NOT_SUPPORTED error
@@ -169,11 +170,11 @@ class ErrorCodePropagationTest {
 		agent.start().subscribe();
 		Thread.sleep(100);
 		client.initialize(new AcpSchema.InitializeRequest(1, new AcpSchema.ClientCapabilities())).block(TIMEOUT);
-		client.newSession(new AcpSchema.NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
+		client.newSession(new AcpSchema.NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
 
 		// Send prompt - should receive CAPABILITY_NOT_SUPPORTED error
 		assertThatThrownBy(() -> {
-			client.prompt(new AcpSchema.PromptRequest("session-123", List.of(new AcpSchema.TextContent("test"))))
+			client.prompt(new AcpSchema.PromptRequest("session-123", java.util.Arrays.asList(new AcpSchema.TextContent("test"))))
 				.block(TIMEOUT);
 		}).isInstanceOf(AcpClientSession.AcpError.class).satisfies(ex -> {
 			AcpClientSession.AcpError acpError = (AcpClientSession.AcpError) ex;
@@ -203,14 +204,15 @@ class ErrorCodePropagationTest {
 		AcpAsyncAgent agent = AcpAgent.async(transportPair.agentTransport())
 			.requestTimeout(TIMEOUT)
 			.initializeHandler(request -> Mono
-				.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of())))
+				.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList())))
 			.newSessionHandler(request -> Mono.just(new AcpSchema.NewSessionResponse("session-123", null, null)))
 			.promptHandler((request, updater) -> {
 				// Request file read from client - client will throw INVALID_PARAMS
 				return agentRef.get()
 					.readTextFile(new AcpSchema.ReadTextFileRequest("session-123", "/nonexistent.txt", null, null))
 					.onErrorResume(error -> {
-						if (error instanceof AcpAgentSession.AcpError acpError) {
+						if (error instanceof AcpAgentSession.AcpError) {
+							AcpAgentSession.AcpError acpError = (AcpAgentSession.AcpError) error;
 							receivedError.set(acpError);
 							errorLatch.countDown();
 						}
@@ -237,10 +239,10 @@ class ErrorCodePropagationTest {
 		AcpSchema.FileSystemCapability fsCaps = new AcpSchema.FileSystemCapability(true, false);
 		AcpSchema.ClientCapabilities clientCaps = new AcpSchema.ClientCapabilities(fsCaps, false);
 		client.initialize(new AcpSchema.InitializeRequest(1, clientCaps)).block(TIMEOUT);
-		client.newSession(new AcpSchema.NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
+		client.newSession(new AcpSchema.NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
 
 		// Send prompt which triggers file read
-		client.prompt(new AcpSchema.PromptRequest("session-123", List.of(new AcpSchema.TextContent("test"))))
+		client.prompt(new AcpSchema.PromptRequest("session-123", java.util.Arrays.asList(new AcpSchema.TextContent("test"))))
 			.block(TIMEOUT);
 
 		assertThat(errorLatch.await(5, TimeUnit.SECONDS)).isTrue();
@@ -267,7 +269,7 @@ class ErrorCodePropagationTest {
 		AcpAsyncAgent agent = AcpAgent.async(transportPair.agentTransport())
 			.requestTimeout(TIMEOUT)
 			.initializeHandler(request -> Mono
-				.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of())))
+				.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList())))
 			.newSessionHandler(request -> Mono.just(new AcpSchema.NewSessionResponse("session-123", null, null)))
 			.promptHandler((request, updater) -> {
 				// Throw a plain exception (not AcpProtocolException)
@@ -282,11 +284,11 @@ class ErrorCodePropagationTest {
 		agent.start().subscribe();
 		Thread.sleep(100);
 		client.initialize(new AcpSchema.InitializeRequest(1, new AcpSchema.ClientCapabilities())).block(TIMEOUT);
-		client.newSession(new AcpSchema.NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
+		client.newSession(new AcpSchema.NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
 
 		// Send prompt - should receive INTERNAL_ERROR (this is correct behavior)
 		assertThatThrownBy(() -> {
-			client.prompt(new AcpSchema.PromptRequest("session-123", List.of(new AcpSchema.TextContent("test"))))
+			client.prompt(new AcpSchema.PromptRequest("session-123", java.util.Arrays.asList(new AcpSchema.TextContent("test"))))
 				.block(TIMEOUT);
 		}).isInstanceOf(AcpClientSession.AcpError.class).satisfies(ex -> {
 			AcpClientSession.AcpError acpError = (AcpClientSession.AcpError) ex;

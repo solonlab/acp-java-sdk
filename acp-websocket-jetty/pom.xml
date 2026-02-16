@@ -26,11 +26,15 @@
         <!-- Jetty WebSocket Server -->
         <dependency>
             <groupId>org.eclipse.jetty.websocket</groupId>
-            <artifactId>jetty-websocket-jetty-server</artifactId>
+            <artifactId>websocket-server</artifactId>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty.websocket</groupId>
-            <artifactId>jetty-websocket-jetty-api</artifactId>
+            <artifactId>websocket-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty.websocket</groupId>
+            <artifactId>websocket-servlet</artifactId>
         </dependency>
 
         <!-- Test dependencies -->

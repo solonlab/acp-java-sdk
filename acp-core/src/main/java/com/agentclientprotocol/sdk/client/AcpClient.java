@@ -19,7 +19,7 @@ import com.agentclientprotocol.sdk.spec.AcpClientTransport;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.agentclientprotocol.sdk.spec.AcpSession;
 import com.agentclientprotocol.sdk.util.Assert;
-import io.modelcontextprotocol.json.TypeRef;
+import com.agentclientprotocol.sdk.json.TypeRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
@@ -71,10 +71,10 @@ import reactor.core.scheduler.Schedulers;
  *
  * // Initialize and use
  * client.initialize(new AcpSchema.InitializeRequest(1, new AcpSchema.ClientCapabilities()))
- *     .flatMap(initResponse -> client.newSession(new AcpSchema.NewSessionRequest("/workspace", List.of())))
+ *     .flatMap(initResponse -> client.newSession(new AcpSchema.NewSessionRequest("/workspace", java.util.Collections.emptyList())))
  *     .flatMap(sessionResponse -> client.prompt(new AcpSchema.PromptRequest(
  *         sessionResponse.sessionId(),
- *         List.of(new AcpSchema.TextContent("Fix the failing test")))))
+ *         java.util.Collections.singletonList(new AcpSchema.TextContent("Fix the failing test")))))
  *     .doOnNext(response -> System.out.println("Response: " + response))
  *     .block();
  *
@@ -509,13 +509,13 @@ public interface AcpClient {
 			if (!sessionUpdateConsumers.isEmpty()) {
 				notificationHandlers.put(AcpSchema.METHOD_SESSION_UPDATE, params -> {
 					AcpSchema.SessionNotification notification = transport.unmarshalFrom(params,
-							new io.modelcontextprotocol.json.TypeRef<AcpSchema.SessionNotification>() {
+							new com.agentclientprotocol.sdk.json.TypeRef<AcpSchema.SessionNotification>() {
 							});
 					logger.debug("Received session update for session: {}", notification.sessionId());
 
 					// Call all registered consumers
 					return Mono
-						.when(sessionUpdateConsumers.stream().map(consumer -> consumer.apply(notification)).toList());
+						.when(sessionUpdateConsumers.stream().map(consumer -> consumer.apply(notification)).collect(java.util.stream.Collectors.toList()));
 				});
 			}
 
@@ -840,8 +840,8 @@ public interface AcpClient {
 		 * <p>Example usage:
 		 * <pre>{@code
 		 * .sessionUpdateConsumer(notification -> {
-		 *     if (notification.update() instanceof AgentMessageChunk msg) {
-		 *         System.out.println(msg.content());
+		 *     if (notification.update() instanceof AgentMessageChunk) {
+AgentMessageChunk msg = (AgentMessageChunk) notification.update();		 *         System.out.println(msg.content());
 		 *     }
 		 * })
 		 * }</pre>
@@ -904,13 +904,13 @@ public interface AcpClient {
 			if (!sessionUpdateConsumers.isEmpty()) {
 				notificationHandlers.put(AcpSchema.METHOD_SESSION_UPDATE, params -> {
 					AcpSchema.SessionNotification notification = transport.unmarshalFrom(params,
-							new io.modelcontextprotocol.json.TypeRef<AcpSchema.SessionNotification>() {
+							new com.agentclientprotocol.sdk.json.TypeRef<AcpSchema.SessionNotification>() {
 							});
 					logger.debug("Received session update for session: {}", notification.sessionId());
 
 					// Call all registered consumers
 					return Mono
-						.when(sessionUpdateConsumers.stream().map(consumer -> consumer.apply(notification)).toList());
+						.when(sessionUpdateConsumers.stream().map(consumer -> consumer.apply(notification)).collect(java.util.stream.Collectors.toList()));
 				});
 			}
 

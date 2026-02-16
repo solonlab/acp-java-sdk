@@ -7,6 +7,7 @@ package com.agentclientprotocol.sdk;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,7 +16,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.modelcontextprotocol.json.McpJsonMapper;
+import com.agentclientprotocol.sdk.json.McpJsonMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import com.agentclientprotocol.sdk.client.AcpAsyncClient;
@@ -88,7 +89,7 @@ class GeminiCliIT {
 
 			// Create session
 			AcpSchema.NewSessionResponse sessionResponse = client
-				.newSession(new AcpSchema.NewSessionRequest(System.getProperty("user.dir"), List.of()))
+				.newSession(new AcpSchema.NewSessionRequest(System.getProperty("user.dir"), Collections.emptyList()))
 				.block();
 
 			assertThat(sessionResponse).isNotNull();
@@ -100,7 +101,7 @@ class GeminiCliIT {
 			// Send prompt
 			AcpSchema.PromptResponse promptResponse = client
 				.prompt(new AcpSchema.PromptRequest(sessionResponse.sessionId(),
-						List.of(new AcpSchema.TextContent("What is 2+2?"))))
+						java.util.Arrays.asList(new AcpSchema.TextContent("What is 2+2?"))))
 				.block();
 
 			assertThat(promptResponse).isNotNull();
@@ -143,15 +144,19 @@ class GeminiCliIT {
 				allUpdates.add(update);
 
 				// Log details for tool calls
-				if (update instanceof AcpSchema.ToolCall toolCall) {
+				if (update instanceof AcpSchema.ToolCall) {
+					AcpSchema.ToolCall toolCall = (AcpSchema.ToolCall) update;
 					logger.info("Tool call: id={}, title={}, kind={}, status={}", toolCall.toolCallId(),
 							toolCall.title(), toolCall.kind(), toolCall.status());
 				}
-				else if (update instanceof AcpSchema.ToolCallUpdateNotification toolUpdate) {
+				else if (update instanceof AcpSchema.ToolCallUpdateNotification) {
+					AcpSchema.ToolCallUpdateNotification toolUpdate = (AcpSchema.ToolCallUpdateNotification) update;
 					logger.info("Tool update: id={}, status={}", toolUpdate.toolCallId(), toolUpdate.status());
 				}
-				else if (update instanceof AcpSchema.AgentMessageChunk chunk) {
-					if (chunk.content() instanceof AcpSchema.TextContent text) {
+				else if (update instanceof AcpSchema.AgentMessageChunk) {
+					AcpSchema.AgentMessageChunk chunk = (AcpSchema.AgentMessageChunk) update;
+					if (chunk.content() instanceof AcpSchema.TextContent) {
+						AcpSchema.TextContent text = (AcpSchema.TextContent) chunk.content();
 						logger.info("Agent message: {}", text.text().substring(0, Math.min(100, text.text().length())));
 					}
 				}
@@ -179,7 +184,7 @@ class GeminiCliIT {
 			.readTextFileHandler((AcpSchema.ReadTextFileRequest request) -> {
 				logger.info("File read request: path={}", request.path());
 				try {
-					String content = Files.readString(Path.of(request.path()));
+					String content = new String(Files.readAllBytes(Paths.get(request.path())), java.nio.charset.StandardCharsets.UTF_8);
 					return Mono.just(new AcpSchema.ReadTextFileResponse(content));
 				}
 				catch (IOException e) {
@@ -203,7 +208,7 @@ class GeminiCliIT {
 
 			// Create session
 			AcpSchema.NewSessionResponse sessionResponse = client
-				.newSession(new AcpSchema.NewSessionRequest(System.getProperty("user.dir"), List.of()))
+				.newSession(new AcpSchema.NewSessionRequest(System.getProperty("user.dir"), Collections.emptyList()))
 				.block();
 
 			assertThat(sessionResponse).isNotNull();
@@ -213,7 +218,7 @@ class GeminiCliIT {
 			// Send a prompt that should trigger tool calls
 			logger.info("Sending prompt to trigger tool call...");
 			AcpSchema.PromptResponse promptResponse = client.prompt(new AcpSchema.PromptRequest(sessionId,
-					List.of(new AcpSchema.TextContent("Read the pom.xml file and tell me the artifact ID only."))))
+					java.util.Arrays.asList(new AcpSchema.TextContent("Read the pom.xml file and tell me the artifact ID only."))))
 				.block();
 
 			assertThat(promptResponse).isNotNull();
@@ -275,7 +280,7 @@ class GeminiCliIT {
 
 			// Create session
 			AcpSchema.NewSessionResponse sessionResponse = client
-				.newSession(new AcpSchema.NewSessionRequest(System.getProperty("user.dir"), List.of()))
+				.newSession(new AcpSchema.NewSessionRequest(System.getProperty("user.dir"), Collections.emptyList()))
 				.block();
 			assertThat(sessionResponse).isNotNull();
 			String sessionId = sessionResponse.sessionId();
@@ -285,7 +290,7 @@ class GeminiCliIT {
 			logger.info("Sending first prompt...");
 			AcpSchema.PromptResponse prompt1 = client
 				.prompt(new AcpSchema.PromptRequest(sessionId,
-						List.of(new AcpSchema.TextContent("What is 2+2? Answer with just the number."))))
+						java.util.Arrays.asList(new AcpSchema.TextContent("What is 2+2? Answer with just the number."))))
 				.block();
 			assertThat(prompt1).isNotNull();
 			assertThat(prompt1.stopReason()).isNotNull();
@@ -298,7 +303,7 @@ class GeminiCliIT {
 			logger.info("Sending second prompt...");
 			AcpSchema.PromptResponse prompt2 = client
 				.prompt(new AcpSchema.PromptRequest(sessionId,
-						List.of(new AcpSchema.TextContent("What is 3+3? Answer with just the number."))))
+						java.util.Arrays.asList(new AcpSchema.TextContent("What is 3+3? Answer with just the number."))))
 				.block();
 			assertThat(prompt2).isNotNull();
 			assertThat(prompt2.stopReason()).isNotNull();
@@ -314,7 +319,7 @@ class GeminiCliIT {
 			logger.info("Sending third prompt with context reference...");
 			AcpSchema.PromptResponse prompt3 = client
 				.prompt(new AcpSchema.PromptRequest(sessionId,
-						List.of(new AcpSchema.TextContent("What is the sum of the two numbers I asked about?"))))
+						java.util.Arrays.asList(new AcpSchema.TextContent("What is the sum of the two numbers I asked about?"))))
 				.block();
 			assertThat(prompt3).isNotNull();
 			logger.info("Third prompt completed: stopReason={}", prompt3.stopReason());
@@ -352,18 +357,18 @@ class GeminiCliIT {
 
 			// Create session
 			AcpSchema.NewSessionResponse sessionResponse = client
-				.newSession(new AcpSchema.NewSessionRequest(System.getProperty("user.dir"), List.of()))
+				.newSession(new AcpSchema.NewSessionRequest(System.getProperty("user.dir"), Collections.emptyList()))
 				.block();
 			String sessionId = sessionResponse.sessionId();
 			logger.info("Created session: {}", sessionId);
 
 			// Send a prompt that will take a while (ask for detailed explanation)
 			logger.info("Sending long-running prompt...");
-			var promptMono = client.prompt(new AcpSchema.PromptRequest(sessionId,
-					List.of(new AcpSchema.TextContent("Explain quantum computing in detail."))));
+			Mono<AcpSchema.PromptResponse> promptMono = client.prompt(new AcpSchema.PromptRequest(sessionId,
+					java.util.Arrays.asList(new AcpSchema.TextContent("Explain quantum computing in detail."))));
 
 			// Start the prompt asynchronously
-			var disposable = promptMono.subscribe(
+			reactor.core.Disposable disposable = promptMono.subscribe(
 					response -> logger.info("Prompt completed with: {}", response.stopReason()),
 					error -> logger.info("Prompt error: {}", error.getMessage()));
 
@@ -438,7 +443,7 @@ class GeminiCliIT {
 			.readTextFileHandler((AcpSchema.ReadTextFileRequest request) -> {
 				logger.info("Read request: {}", request.path());
 				try {
-					String content = Files.readString(Path.of(request.path()));
+					String content = new String(Files.readAllBytes(Paths.get(request.path())), java.nio.charset.StandardCharsets.UTF_8);
 					return Mono.just(new AcpSchema.ReadTextFileResponse(content));
 				}
 				catch (IOException e) {
@@ -452,11 +457,11 @@ class GeminiCliIT {
 				writeRequestCount.incrementAndGet();
 				writeRequests.add(request);
 				try {
-					Path filePath = Path.of(request.path());
+					Path filePath = Paths.get(request.path());
 					// Only write to temp directory for safety
 					if (filePath.startsWith(tempDir)) {
 						Files.createDirectories(filePath.getParent());
-						Files.writeString(filePath, request.content());
+						Files.write(filePath, request.content().getBytes(java.nio.charset.StandardCharsets.UTF_8));
 						logger.info("File written: {}", filePath);
 					}
 					else {
@@ -479,7 +484,7 @@ class GeminiCliIT {
 
 			// Create session in temp directory
 			AcpSchema.NewSessionResponse sessionResponse = client
-				.newSession(new AcpSchema.NewSessionRequest(tempDir.toString(), List.of()))
+				.newSession(new AcpSchema.NewSessionRequest(tempDir.toString(), Collections.emptyList()))
 				.block();
 			String sessionId = sessionResponse.sessionId();
 			logger.info("Created session in: {}", tempDir);
@@ -487,7 +492,7 @@ class GeminiCliIT {
 			// Ask agent to create a file
 			logger.info("Asking agent to create a file...");
 			AcpSchema.PromptResponse response = client.prompt(new AcpSchema.PromptRequest(sessionId,
-					List.of(new AcpSchema.TextContent(
+					java.util.Arrays.asList(new AcpSchema.TextContent(
 							"Create a file called hello.txt in the current directory with the content 'Hello World'"))))
 				.timeout(Duration.ofSeconds(90))
 				.block();

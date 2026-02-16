@@ -66,7 +66,7 @@ public class AcpTestFixtures {
 	 * @return PromptRequest with default test data
 	 */
 	public static AcpSchema.PromptRequest createPromptRequest() {
-		return new AcpSchema.PromptRequest("test-session-id", List.of(createTextContent("Test prompt")));
+		return new AcpSchema.PromptRequest("test-session-id", java.util.Arrays.asList(createTextContent("Test prompt")));
 	}
 
 	/**
@@ -76,7 +76,7 @@ public class AcpTestFixtures {
 	 * @return PromptRequest with specified data
 	 */
 	public static AcpSchema.PromptRequest createPromptRequest(String sessionId, String promptText) {
-		return new AcpSchema.PromptRequest(sessionId, List.of(createTextContent(promptText)));
+		return new AcpSchema.PromptRequest(sessionId, java.util.Arrays.asList(createTextContent(promptText)));
 	}
 
 	/**
@@ -232,7 +232,7 @@ public class AcpTestFixtures {
 	 */
 	public static AcpSchema.SessionModeState createSessionModeState() {
 		AcpSchema.SessionMode mode = new AcpSchema.SessionMode("code", "Code Mode", "Code editing mode");
-		return new AcpSchema.SessionModeState("code", List.of(mode));
+		return new AcpSchema.SessionModeState("code", java.util.Arrays.asList(mode));
 	}
 
 	/**
@@ -241,7 +241,7 @@ public class AcpTestFixtures {
 	 */
 	public static AcpSchema.SessionModelState createSessionModelState() {
 		AcpSchema.ModelInfo model = new AcpSchema.ModelInfo("test-model", "Test Model", "Test model description");
-		return new AcpSchema.SessionModelState("test-model", List.of(model));
+		return new AcpSchema.SessionModelState("test-model", java.util.Arrays.asList(model));
 	}
 
 	// ---------------------------

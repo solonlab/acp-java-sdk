@@ -31,6 +31,8 @@ import com.agentclientprotocol.sdk.spec.AcpSchema.PromptResponse;
 import com.agentclientprotocol.sdk.spec.AcpSchema.ReadTextFileResponse;
 import com.agentclientprotocol.sdk.spec.AcpSchema.ReleaseTerminalResponse;
 import com.agentclientprotocol.sdk.spec.AcpSchema.TerminalOutputResponse;
+import com.agentclientprotocol.sdk.agent.CommandResult;
+import com.agentclientprotocol.sdk.spec.AcpSchema.ContentBlock;
 import com.agentclientprotocol.sdk.spec.AcpSchema.TextContent;
 import com.agentclientprotocol.sdk.spec.AcpSchema.WaitForTerminalExitResponse;
 import com.agentclientprotocol.sdk.spec.AcpSchema.WriteTextFileResponse;
@@ -110,8 +112,8 @@ class BuilderVsAnnotationComparisonTest {
 					.build();
 
 			client.initialize(new InitializeRequest(1, null)).block(TIMEOUT);
-			client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-			client.prompt(new PromptRequest("session-1", List.of(new TextContent("Hello")))).block(TIMEOUT);
+			client.newSession(new NewSessionRequest("/workspace", java.util.Collections.emptyList())).block(TIMEOUT);
+			client.prompt(new PromptRequest("session-1", java.util.Collections.<ContentBlock>singletonList(new TextContent("Hello")))).block(TIMEOUT);
 
 			assertThat(events).containsExactly("init", "newSession:/workspace", "prompt:Hello");
 
@@ -167,8 +169,8 @@ class BuilderVsAnnotationComparisonTest {
 					.build();
 
 			client.initialize(new InitializeRequest(1, null)).block(TIMEOUT);
-			client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-			client.prompt(new PromptRequest("session-1", List.of(new TextContent("Hello")))).block(TIMEOUT);
+			client.newSession(new NewSessionRequest("/workspace", java.util.Collections.emptyList())).block(TIMEOUT);
+			client.prompt(new PromptRequest("session-1", java.util.Collections.<ContentBlock>singletonList(new TextContent("Hello")))).block(TIMEOUT);
 
 			// SAME behavior as builder-based
 			assertThat(events).containsExactly("init", "newSession:/workspace", "prompt:Hello");
@@ -228,8 +230,8 @@ class BuilderVsAnnotationComparisonTest {
 					.build();
 
 			client.initialize(new InitializeRequest(1, fsCaps)).block(TIMEOUT);
-			client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-			client.prompt(new PromptRequest("file-session", List.of(new TextContent("process")))).block(TIMEOUT);
+			client.newSession(new NewSessionRequest("/workspace", java.util.Collections.emptyList())).block(TIMEOUT);
+			client.prompt(new PromptRequest("file-session", java.util.Collections.<ContentBlock>singletonList(new TextContent("process")))).block(TIMEOUT);
 
 			assertThat(readContent.get()).isEqualTo("file content");
 			assertThat(writtenContent.get()).isEqualTo("processed: file content");
@@ -293,8 +295,8 @@ class BuilderVsAnnotationComparisonTest {
 					.build();
 
 			client.initialize(new InitializeRequest(1, fsCaps)).block(TIMEOUT);
-			client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-			client.prompt(new PromptRequest("file-session", List.of(new TextContent("process")))).block(TIMEOUT);
+			client.newSession(new NewSessionRequest("/workspace", java.util.Collections.emptyList())).block(TIMEOUT);
+			client.prompt(new PromptRequest("file-session", java.util.Collections.<ContentBlock>singletonList(new TextContent("process")))).block(TIMEOUT);
 
 			// SAME behavior
 			assertThat(readContent.get()).isEqualTo("file content");
@@ -331,7 +333,7 @@ class BuilderVsAnnotationComparisonTest {
 					.newSessionHandler(req -> new NewSessionResponse("term-session", null, null))
 					.promptHandler((req, ctx) -> {
 						// Execute command using convenience API
-						var result = ctx.execute("echo", "hello");
+						CommandResult result = ctx.execute("echo", "hello");
 						executedCommand.set("echo hello");
 						exitCode.set(result.exitCode());
 						return PromptResponse.text("Exit code: " + result.exitCode());
@@ -356,8 +358,8 @@ class BuilderVsAnnotationComparisonTest {
 					.build();
 
 			client.initialize(new InitializeRequest(1, termCaps)).block(TIMEOUT);
-			client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-			client.prompt(new PromptRequest("term-session", List.of(new TextContent("run")))).block(TIMEOUT);
+			client.newSession(new NewSessionRequest("/workspace", java.util.Collections.emptyList())).block(TIMEOUT);
+			client.prompt(new PromptRequest("term-session", java.util.Collections.<ContentBlock>singletonList(new TextContent("run")))).block(TIMEOUT);
 
 			assertThat(executedCommand.get()).isEqualTo("echo hello");
 			assertThat(exitCode.get()).isEqualTo(0);
@@ -392,7 +394,7 @@ class BuilderVsAnnotationComparisonTest {
 
 				@Prompt
 				PromptResponse prompt(PromptRequest req, SyncPromptContext ctx) {
-					var result = ctx.execute("echo", "hello");
+					CommandResult result = ctx.execute("echo", "hello");
 					executedCommand.set("echo hello");
 					exitCode.set(result.exitCode());
 					return PromptResponse.text("Exit code: " + result.exitCode());
@@ -422,8 +424,8 @@ class BuilderVsAnnotationComparisonTest {
 					.build();
 
 			client.initialize(new InitializeRequest(1, termCaps)).block(TIMEOUT);
-			client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-			client.prompt(new PromptRequest("term-session", List.of(new TextContent("run")))).block(TIMEOUT);
+			client.newSession(new NewSessionRequest("/workspace", java.util.Collections.emptyList())).block(TIMEOUT);
+			client.prompt(new PromptRequest("term-session", java.util.Collections.<ContentBlock>singletonList(new TextContent("run")))).block(TIMEOUT);
 
 			// SAME behavior
 			assertThat(executedCommand.get()).isEqualTo("echo hello");
@@ -480,8 +482,8 @@ class BuilderVsAnnotationComparisonTest {
 					.build();
 
 			client.initialize(new InitializeRequest(1, null)).block(TIMEOUT);
-			client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-			PromptResponse resp = client.prompt(new PromptRequest("s1", List.of(new TextContent("World"))))
+			client.newSession(new NewSessionRequest("/workspace", java.util.Collections.emptyList())).block(TIMEOUT);
+			PromptResponse resp = client.prompt(new PromptRequest("s1", java.util.Collections.<ContentBlock>singletonList(new TextContent("World"))))
 					.block(TIMEOUT);
 
 			// String is automatically converted to PromptResponse
@@ -531,8 +533,8 @@ class BuilderVsAnnotationComparisonTest {
 					.build();
 
 			client.initialize(new InitializeRequest(1, null)).block(TIMEOUT);
-			client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-			PromptResponse resp = client.prompt(new PromptRequest("v1", List.of(new TextContent("test"))))
+			client.newSession(new NewSessionRequest("/workspace", java.util.Collections.emptyList())).block(TIMEOUT);
+			PromptResponse resp = client.prompt(new PromptRequest("v1", java.util.Collections.<ContentBlock>singletonList(new TextContent("test"))))
 					.block(TIMEOUT);
 
 			assertThat(messages).containsExactly("processed");
@@ -550,9 +552,9 @@ class BuilderVsAnnotationComparisonTest {
 
 	private static String extractText(PromptRequest req) {
 		if (req.prompt() != null && !req.prompt().isEmpty()) {
-			var content = req.prompt().get(0);
-			if (content instanceof TextContent tc) {
-				return tc.text();
+			ContentBlock content = req.prompt().get(0);
+			if (content instanceof TextContent) {
+				return ((TextContent) content).text();
 			}
 		}
 		return "";

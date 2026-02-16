@@ -7,12 +7,13 @@ package com.agentclientprotocol.sdk.spec;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.json.TypeRef;
+import com.agentclientprotocol.sdk.json.McpJsonMapper;
+import com.agentclientprotocol.sdk.json.TypeRef;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,7 +48,7 @@ class McpServerConfigurationTest {
 			if (is == null) {
 				throw new IOException("Golden file not found: " + path);
 			}
-			return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+			java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream(); byte[] buf = new byte[4096]; int len; while ((len = is.read(buf)) != -1) { baos.write(buf, 0, len); } return new String(baos.toByteArray(), StandardCharsets.UTF_8);
 		}
 	}
 
@@ -81,7 +82,7 @@ class McpServerConfigurationTest {
 	@Test
 	void stdioServerSerializationHasNoTypeField() throws IOException {
 		AcpSchema.McpServerStdio stdio = new AcpSchema.McpServerStdio("test-server", "/usr/bin/mcp",
-				List.of("--arg1"), List.of(new AcpSchema.EnvVariable("KEY", "value")));
+				java.util.Arrays.asList("--arg1"), java.util.Arrays.asList(new AcpSchema.EnvVariable("KEY", "value")));
 
 		String json = jsonMapper.writeValueAsString(stdio);
 		JsonNode node = objectMapper.readTree(json);
@@ -95,7 +96,7 @@ class McpServerConfigurationTest {
 	@Test
 	void stdioServerRoundTrip() throws IOException {
 		AcpSchema.McpServerStdio original = new AcpSchema.McpServerStdio("filesystem", "/path/to/mcp",
-				List.of("--stdio", "--mode", "read"), List.of(new AcpSchema.EnvVariable("TOKEN", "abc123")));
+				java.util.Arrays.asList("--stdio", "--mode", "read"), java.util.Arrays.asList(new AcpSchema.EnvVariable("TOKEN", "abc123")));
 
 		String json = jsonMapper.writeValueAsString(original);
 		AcpSchema.McpServer deserialized = jsonMapper.readValue(json, new TypeRef<AcpSchema.McpServer>() {
@@ -138,7 +139,7 @@ class McpServerConfigurationTest {
 	@Test
 	void httpServerSerializationHasTypeField() throws IOException {
 		AcpSchema.McpServerHttp http = new AcpSchema.McpServerHttp("api", "https://api.example.com",
-				List.of(new AcpSchema.HttpHeader("Auth", "token")));
+				java.util.Arrays.asList(new AcpSchema.HttpHeader("Auth", "token")));
 
 		String json = jsonMapper.writeValueAsString(http);
 		JsonNode node = objectMapper.readTree(json);
@@ -153,7 +154,7 @@ class McpServerConfigurationTest {
 	@Test
 	void httpServerRoundTrip() throws IOException {
 		AcpSchema.McpServerHttp original = new AcpSchema.McpServerHttp("remote-api", "https://example.com/mcp",
-				List.of(new AcpSchema.HttpHeader("Authorization", "Bearer xyz")));
+				java.util.Arrays.asList(new AcpSchema.HttpHeader("Authorization", "Bearer xyz")));
 
 		String json = jsonMapper.writeValueAsString(original);
 		AcpSchema.McpServer deserialized = jsonMapper.readValue(json, new TypeRef<AcpSchema.McpServer>() {
@@ -193,7 +194,7 @@ class McpServerConfigurationTest {
 	@Test
 	void sseServerSerializationHasTypeField() throws IOException {
 		AcpSchema.McpServerSse sse = new AcpSchema.McpServerSse("events", "https://events.example.com",
-				List.of(new AcpSchema.HttpHeader("X-Key", "secret")));
+				java.util.Arrays.asList(new AcpSchema.HttpHeader("X-Key", "secret")));
 
 		String json = jsonMapper.writeValueAsString(sse);
 		JsonNode node = objectMapper.readTree(json);
@@ -207,7 +208,7 @@ class McpServerConfigurationTest {
 	@Test
 	void sseServerRoundTrip() throws IOException {
 		AcpSchema.McpServerSse original = new AcpSchema.McpServerSse("realtime", "https://realtime.example.com/events",
-				List.of(new AcpSchema.HttpHeader("X-API-Key", "key123")));
+				java.util.Arrays.asList(new AcpSchema.HttpHeader("X-API-Key", "key123")));
 
 		String json = jsonMapper.writeValueAsString(original);
 		AcpSchema.McpServer deserialized = jsonMapper.readValue(json, new TypeRef<AcpSchema.McpServer>() {
@@ -253,10 +254,10 @@ class McpServerConfigurationTest {
 
 	@Test
 	void mixedMcpServersRoundTrip() throws IOException {
-		List<AcpSchema.McpServer> servers = List.of(
-				new AcpSchema.McpServerStdio("fs", "/bin/mcp", List.of(), List.of()),
-				new AcpSchema.McpServerHttp("api", "https://api.com", List.of()),
-				new AcpSchema.McpServerSse("events", "https://events.com", List.of()));
+		List<AcpSchema.McpServer> servers = java.util.Arrays.asList(
+				new AcpSchema.McpServerStdio("fs", "/bin/mcp", Collections.emptyList(), Collections.emptyList()),
+				new AcpSchema.McpServerHttp("api", "https://api.com", Collections.emptyList()),
+				new AcpSchema.McpServerSse("events", "https://events.com", Collections.emptyList()));
 
 		AcpSchema.NewSessionRequest original = new AcpSchema.NewSessionRequest("/project", servers);
 
@@ -277,8 +278,8 @@ class McpServerConfigurationTest {
 
 	@Test
 	void stdioServerWithEmptyEnv() throws IOException {
-		AcpSchema.McpServerStdio stdio = new AcpSchema.McpServerStdio("test", "/bin/mcp", List.of("--arg"),
-				List.of());
+		AcpSchema.McpServerStdio stdio = new AcpSchema.McpServerStdio("test", "/bin/mcp", java.util.Arrays.asList("--arg"),
+				Collections.emptyList());
 
 		String json = jsonMapper.writeValueAsString(stdio);
 		AcpSchema.McpServer result = jsonMapper.readValue(json, new TypeRef<AcpSchema.McpServer>() {
@@ -290,7 +291,7 @@ class McpServerConfigurationTest {
 
 	@Test
 	void httpServerWithEmptyHeaders() throws IOException {
-		AcpSchema.McpServerHttp http = new AcpSchema.McpServerHttp("api", "https://api.com", List.of());
+		AcpSchema.McpServerHttp http = new AcpSchema.McpServerHttp("api", "https://api.com", Collections.emptyList());
 
 		String json = jsonMapper.writeValueAsString(http);
 		AcpSchema.McpServer result = jsonMapper.readValue(json, new TypeRef<AcpSchema.McpServer>() {

@@ -7,7 +7,7 @@ package com.agentclientprotocol.sdk.spec;
 import java.util.List;
 
 import com.agentclientprotocol.sdk.spec.AcpSchema.JSONRPCMessage;
-import io.modelcontextprotocol.json.TypeRef;
+import com.agentclientprotocol.sdk.json.TypeRef;
 import reactor.core.publisher.Mono;
 
 /**
@@ -84,7 +84,7 @@ public interface AcpTransport {
 	 * @return list of supported protocol versions
 	 */
 	default List<Integer> protocolVersions() {
-		return List.of(AcpSchema.LATEST_PROTOCOL_VERSION);
+		return java.util.Collections.singletonList(AcpSchema.LATEST_PROTOCOL_VERSION);
 	}
 
 }

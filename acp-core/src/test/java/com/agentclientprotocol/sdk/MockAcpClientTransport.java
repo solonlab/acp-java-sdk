@@ -14,8 +14,8 @@ import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.agentclientprotocol.sdk.spec.AcpSchema.JSONRPCMessage;
 import com.agentclientprotocol.sdk.spec.AcpSchema.JSONRPCNotification;
 import com.agentclientprotocol.sdk.spec.AcpSchema.JSONRPCRequest;
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.json.TypeRef;
+import com.agentclientprotocol.sdk.json.McpJsonMapper;
+import com.agentclientprotocol.sdk.json.TypeRef;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
@@ -74,7 +74,7 @@ public class MockAcpClientTransport implements AcpClientTransport {
 
 	@Override
 	public List<Integer> protocolVersions() {
-		return List.of(protocolVersion);
+		return java.util.Arrays.asList(protocolVersion);
 	}
 
 	/**

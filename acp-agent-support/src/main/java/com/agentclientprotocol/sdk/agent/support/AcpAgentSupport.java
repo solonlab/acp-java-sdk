@@ -114,7 +114,7 @@ public class AcpAgentSupport {
 		this.interceptors = builder.interceptors;
 
 		// Build the underlying sync agent
-		var agentBuilder = AcpAgent.sync(builder.transport)
+		AcpAgent.SyncAgentBuilder agentBuilder = AcpAgent.sync(builder.transport)
 				.requestTimeout(builder.requestTimeout);
 
 		// Wire discovered handlers to the agent builder
@@ -278,8 +278,8 @@ public class AcpAgentSupport {
 			if (replacement != null) {
 				return (T) replacement;
 			}
-			if (e instanceof RuntimeException re) {
-				throw re;
+			if (e instanceof RuntimeException) {
+				throw (RuntimeException) e;
 			}
 			throw new RuntimeException(e);
 		}

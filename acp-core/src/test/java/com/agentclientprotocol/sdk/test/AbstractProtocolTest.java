@@ -140,7 +140,8 @@ public abstract class AbstractProtocolTest {
 					agentReceived.set(msg);
 					agentLatch.countDown();
 					// Send response back
-					if (msg instanceof AcpSchema.JSONRPCRequest req) {
+					if (msg instanceof AcpSchema.JSONRPCRequest) {
+						AcpSchema.JSONRPCRequest req = (AcpSchema.JSONRPCRequest) msg;
 						AcpSchema.JSONRPCResponse response = AcpTestFixtures.createJsonRpcResponse(req.id(),
 								AcpTestFixtures.createInitializeResponse());
 						agentTransport.sendMessage(response).subscribe();

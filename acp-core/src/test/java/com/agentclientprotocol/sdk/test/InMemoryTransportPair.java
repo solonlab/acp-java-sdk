@@ -11,8 +11,8 @@ import java.util.function.Function;
 import com.agentclientprotocol.sdk.spec.AcpAgentTransport;
 import com.agentclientprotocol.sdk.spec.AcpClientTransport;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.json.TypeRef;
+import com.agentclientprotocol.sdk.json.McpJsonMapper;
+import com.agentclientprotocol.sdk.json.TypeRef;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
@@ -116,7 +116,7 @@ public class InMemoryTransportPair {
 
 		@Override
 		public List<Integer> protocolVersions() {
-			return List.of(AcpSchema.LATEST_PROTOCOL_VERSION);
+			return java.util.Arrays.asList(AcpSchema.LATEST_PROTOCOL_VERSION);
 		}
 
 		@Override
@@ -186,7 +186,7 @@ public class InMemoryTransportPair {
 
 		@Override
 		public List<Integer> protocolVersions() {
-			return List.of(AcpSchema.LATEST_PROTOCOL_VERSION);
+			return java.util.Arrays.asList(AcpSchema.LATEST_PROTOCOL_VERSION);
 		}
 
 		@Override

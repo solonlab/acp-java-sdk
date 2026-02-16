@@ -152,13 +152,18 @@ class DefaultPromptContext implements PromptContext {
 				UUID.randomUUID().toString(), action, ToolKind.EDIT, ToolCallStatus.PENDING,
 				null, null, null, null);
 
-		List<PermissionOption> options = List.of(
+		List<PermissionOption> options = java.util.Arrays.asList(
 				new PermissionOption("allow", "Allow", PermissionOptionKind.ALLOW_ONCE),
 				new PermissionOption("deny", "Deny", PermissionOptionKind.REJECT_ONCE));
 
 		return requestPermission(new RequestPermissionRequest(sessionId, toolCall, options))
-				.map(response -> response.outcome() instanceof PermissionSelected s
-						&& "allow".equals(s.optionId()));
+				.map(response -> {
+					if (response.outcome() instanceof PermissionSelected) {
+						PermissionSelected s = (PermissionSelected) response.outcome();
+						return "allow".equals(s.optionId());
+					}
+					return false;
+				});
 	}
 
 	@Override
@@ -179,7 +184,8 @@ class DefaultPromptContext implements PromptContext {
 
 		return requestPermission(new RequestPermissionRequest(sessionId, toolCall, permOptions))
 				.map(response -> {
-					if (response.outcome() instanceof PermissionSelected s) {
+					if (response.outcome() instanceof PermissionSelected) {
+						PermissionSelected s = (PermissionSelected) response.outcome();
 						int idx = Integer.parseInt(s.optionId());
 						return options[idx];
 					}
@@ -199,7 +205,7 @@ class DefaultPromptContext implements PromptContext {
 		if (command.env() != null) {
 			envList = command.env().entrySet().stream()
 					.map(e -> new EnvVariable(e.getKey(), e.getValue()))
-					.toList();
+					.collect(java.util.stream.Collectors.toList());
 		}
 
 		return createTerminal(new CreateTerminalRequest(

@@ -156,9 +156,10 @@ public final class AcpMethodParameter {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof AcpMethodParameter that)) {
+		if (!(o instanceof AcpMethodParameter)) {
 			return false;
 		}
+		AcpMethodParameter that = (AcpMethodParameter) o;
 		return index == that.index && method.equals(that.method);
 	}
 

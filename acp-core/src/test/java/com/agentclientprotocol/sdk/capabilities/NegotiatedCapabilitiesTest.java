@@ -5,6 +5,7 @@
 package com.agentclientprotocol.sdk.capabilities;
 
 import com.agentclientprotocol.sdk.error.AcpCapabilityException;
+import com.agentclientprotocol.sdk.error.AcpProtocolException;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import org.junit.jupiter.api.Test;
 
@@ -239,7 +240,7 @@ class NegotiatedCapabilitiesTest {
 	void capabilityExceptionConvertsToProtocolException() {
 		AcpCapabilityException exception = new AcpCapabilityException("terminal");
 
-		var protocolException = exception.toProtocolException();
+		AcpProtocolException protocolException = exception.toProtocolException();
 
 		assertThat(protocolException.getCode()).isEqualTo(-32001);
 		assertThat(protocolException.getData()).isEqualTo("terminal");

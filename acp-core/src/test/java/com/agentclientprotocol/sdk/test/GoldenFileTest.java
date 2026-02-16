@@ -12,7 +12,7 @@ import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import io.modelcontextprotocol.json.McpJsonMapper;
+import com.agentclientprotocol.sdk.json.McpJsonMapper;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -106,7 +106,7 @@ class GoldenFileTest {
 			if (is == null) {
 				throw new IOException("Golden file not found: " + path);
 			}
-			return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+			java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream(); byte[] buf = new byte[4096]; int len; while ((len = is.read(buf)) != -1) { baos.write(buf, 0, len); } return new String(baos.toByteArray(), StandardCharsets.UTF_8);
 		}
 	}
 

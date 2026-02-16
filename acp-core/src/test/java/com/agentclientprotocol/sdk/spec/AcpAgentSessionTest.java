@@ -5,6 +5,7 @@
 package com.agentclientprotocol.sdk.spec;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ import reactor.core.publisher.Mono;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import com.agentclientprotocol.sdk.TestUtil;
 
 /**
  * Unit tests for {@link AcpAgentSession}.
@@ -28,16 +30,16 @@ class AcpAgentSessionTest {
 
 	@Test
 	void constructorValidatesArguments() {
-		var transportPair = InMemoryTransportPair.create();
+		InMemoryTransportPair transportPair = InMemoryTransportPair.create();
 		try {
 			assertThrows(IllegalArgumentException.class,
-					() -> new AcpAgentSession(null, transportPair.agentTransport(), Map.of(), Map.of()));
+					() -> new AcpAgentSession(null, transportPair.agentTransport(), Collections.emptyMap(), Collections.emptyMap()));
 			assertThrows(IllegalArgumentException.class,
-					() -> new AcpAgentSession(TIMEOUT, null, Map.of(), Map.of()));
+					() -> new AcpAgentSession(TIMEOUT, null, Collections.emptyMap(), Collections.emptyMap()));
 			assertThrows(IllegalArgumentException.class,
-					() -> new AcpAgentSession(TIMEOUT, transportPair.agentTransport(), null, Map.of()));
+					() -> new AcpAgentSession(TIMEOUT, transportPair.agentTransport(), null, Collections.emptyMap()));
 			assertThrows(IllegalArgumentException.class,
-					() -> new AcpAgentSession(TIMEOUT, transportPair.agentTransport(), Map.of(), null));
+					() -> new AcpAgentSession(TIMEOUT, transportPair.agentTransport(), Collections.emptyMap(), null));
 		}
 		finally {
 			transportPair.closeGracefully().block(TIMEOUT);
@@ -46,18 +48,18 @@ class AcpAgentSessionTest {
 
 	@Test
 	void handlesIncomingRequest() throws Exception {
-		var transportPair = InMemoryTransportPair.create();
+		InMemoryTransportPair transportPair = InMemoryTransportPair.create();
 		try {
 			// Create session with an initialize handler
 			AtomicReference<Object> receivedParams = new AtomicReference<>();
-			Map<String, AcpAgentSession.RequestHandler<?>> requestHandlers = Map.of(AcpSchema.METHOD_INITIALIZE,
+			Map<String, AcpAgentSession.RequestHandler<?>> requestHandlers = TestUtil.mapOf(AcpSchema.METHOD_INITIALIZE,
 					params -> {
 						receivedParams.set(params);
 						return Mono.just(new AcpSchema.InitializeResponse(1,
-								new AcpSchema.AgentCapabilities(false, null, null), List.of()));
+								new AcpSchema.AgentCapabilities(false, null, null), Collections.emptyList()));
 					});
 
-			new AcpAgentSession(TIMEOUT, transportPair.agentTransport(), requestHandlers, Map.of());
+			new AcpAgentSession(TIMEOUT, transportPair.agentTransport(), requestHandlers, Collections.emptyMap());
 
 			// Allow transport to start
 			Thread.sleep(100);
@@ -91,10 +93,10 @@ class AcpAgentSessionTest {
 
 	@Test
 	void handlesMethodNotFound() throws Exception {
-		var transportPair = InMemoryTransportPair.create();
+		InMemoryTransportPair transportPair = InMemoryTransportPair.create();
 		try {
 			// Create session with no handlers
-			new AcpAgentSession(TIMEOUT, transportPair.agentTransport(), Map.of(), Map.of());
+			new AcpAgentSession(TIMEOUT, transportPair.agentTransport(), Collections.emptyMap(), Collections.emptyMap());
 
 			Thread.sleep(100);
 
@@ -126,19 +128,19 @@ class AcpAgentSessionTest {
 
 	@Test
 	void handlesNotification() throws Exception {
-		var transportPair = InMemoryTransportPair.create();
+		InMemoryTransportPair transportPair = InMemoryTransportPair.create();
 		try {
 			AtomicReference<Object> receivedParams = new AtomicReference<>();
 			CountDownLatch notificationLatch = new CountDownLatch(1);
 
-			Map<String, AcpAgentSession.NotificationHandler> notificationHandlers = Map
-				.of(AcpSchema.METHOD_SESSION_CANCEL, params -> {
+			Map<String, AcpAgentSession.NotificationHandler> notificationHandlers = TestUtil
+				.<String, AcpAgentSession.NotificationHandler>mapOf(AcpSchema.METHOD_SESSION_CANCEL, params -> {
 					receivedParams.set(params);
 					notificationLatch.countDown();
 					return Mono.empty();
 				});
 
-			new AcpAgentSession(TIMEOUT, transportPair.agentTransport(), Map.of(), notificationHandlers);
+			new AcpAgentSession(TIMEOUT, transportPair.agentTransport(), Collections.emptyMap(), notificationHandlers);
 
 			Thread.sleep(100);
 
@@ -160,12 +162,12 @@ class AcpAgentSessionTest {
 
 	@Test
 	void singleTurnEnforcementRejectsConcurrentPrompts() throws Exception {
-		var transportPair = InMemoryTransportPair.create();
+		InMemoryTransportPair transportPair = InMemoryTransportPair.create();
 		try {
 			// Create a handler that uses a Mono.delay to simulate async processing
 			AtomicReference<CountDownLatch> promptCanProceedRef = new AtomicReference<>(new CountDownLatch(1));
 
-			Map<String, AcpAgentSession.RequestHandler<?>> requestHandlers = Map.of(AcpSchema.METHOD_SESSION_PROMPT,
+			Map<String, AcpAgentSession.RequestHandler<?>> requestHandlers = TestUtil.mapOf(AcpSchema.METHOD_SESSION_PROMPT,
 					params -> Mono.defer(() -> {
 						// First call gets blocked, second call should be rejected before getting here
 						return Mono.delay(Duration.ofMillis(100))
@@ -173,7 +175,7 @@ class AcpAgentSessionTest {
 					}));
 
 			AcpAgentSession session = new AcpAgentSession(TIMEOUT, transportPair.agentTransport(), requestHandlers,
-					Map.of());
+					Collections.emptyMap());
 
 			Thread.sleep(100);
 
@@ -210,7 +212,7 @@ class AcpAgentSessionTest {
 			// Send prompt request while another is "active"
 			Map<String, Object> params = new HashMap<>();
 			params.put("sessionId", "session-1");
-			params.put("prompt", List.of(new AcpSchema.TextContent("Hello")));
+			params.put("prompt", java.util.Arrays.asList(new AcpSchema.TextContent("Hello")));
 			AcpSchema.JSONRPCRequest request = new AcpSchema.JSONRPCRequest(AcpSchema.JSONRPC_VERSION, "1",
 					AcpSchema.METHOD_SESSION_PROMPT, params);
 			transportPair.clientTransport().sendMessage(request).block(TIMEOUT);
@@ -231,13 +233,13 @@ class AcpAgentSessionTest {
 
 	@Test
 	void hasActivePromptReturnsCorrectState() throws Exception {
-		var transportPair = InMemoryTransportPair.create();
+		InMemoryTransportPair transportPair = InMemoryTransportPair.create();
 		try {
-			Map<String, AcpAgentSession.RequestHandler<?>> requestHandlers = Map.of(AcpSchema.METHOD_SESSION_PROMPT,
+			Map<String, AcpAgentSession.RequestHandler<?>> requestHandlers = TestUtil.mapOf(AcpSchema.METHOD_SESSION_PROMPT,
 					params -> Mono.just(new AcpSchema.PromptResponse(AcpSchema.StopReason.END_TURN)));
 
 			AcpAgentSession session = new AcpAgentSession(TIMEOUT, transportPair.agentTransport(), requestHandlers,
-					Map.of());
+					Collections.emptyMap());
 
 			Thread.sleep(100);
 
@@ -278,9 +280,9 @@ class AcpAgentSessionTest {
 
 	@Test
 	void closeGracefullyCompletes() throws Exception {
-		var transportPair = InMemoryTransportPair.create();
+		InMemoryTransportPair transportPair = InMemoryTransportPair.create();
 
-		AcpAgentSession session = new AcpAgentSession(TIMEOUT, transportPair.agentTransport(), Map.of(), Map.of());
+		AcpAgentSession session = new AcpAgentSession(TIMEOUT, transportPair.agentTransport(), Collections.emptyMap(), Collections.emptyMap());
 
 		Thread.sleep(100);
 
@@ -291,13 +293,13 @@ class AcpAgentSessionTest {
 
 	@Test
 	void handlerErrorReturnsJsonRpcError() throws Exception {
-		var transportPair = InMemoryTransportPair.create();
+		InMemoryTransportPair transportPair = InMemoryTransportPair.create();
 		try {
 			// Create session with a handler that throws
-			Map<String, AcpAgentSession.RequestHandler<?>> requestHandlers = Map.of(AcpSchema.METHOD_INITIALIZE,
+			Map<String, AcpAgentSession.RequestHandler<?>> requestHandlers = TestUtil.mapOf(AcpSchema.METHOD_INITIALIZE,
 					params -> Mono.error(new RuntimeException("Handler error")));
 
-			new AcpAgentSession(TIMEOUT, transportPair.agentTransport(), requestHandlers, Map.of());
+			new AcpAgentSession(TIMEOUT, transportPair.agentTransport(), requestHandlers, Collections.emptyMap());
 
 			Thread.sleep(100);
 

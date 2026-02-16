@@ -19,7 +19,7 @@ import reactor.core.scheduler.Schedulers;
 import com.agentclientprotocol.sdk.error.AcpErrorCodes;
 import com.agentclientprotocol.sdk.error.AcpProtocolException;
 import com.agentclientprotocol.sdk.util.Assert;
-import io.modelcontextprotocol.json.TypeRef;
+import com.agentclientprotocol.sdk.json.TypeRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
@@ -87,8 +87,16 @@ public class AcpAgentSession implements AcpSession {
 	/**
 	 * Represents an active prompt session for single-turn enforcement.
 	 */
-	private record ActivePrompt(String sessionId, Object requestId) {
+	private static final class ActivePrompt {
+	private final String sessionId;
+	private final Object requestId;
+	ActivePrompt(String sessionId, Object requestId) {
+		this.sessionId = sessionId;
+		this.requestId = requestId;
 	}
+	String sessionId() { return this.sessionId; }
+	Object requestId() { return this.requestId; }
+}
 
 	/**
 	 * Functional interface for handling incoming JSON-RPC requests. Implementations
@@ -169,10 +177,10 @@ public class AcpAgentSession implements AcpSession {
 	 * @return A Mono containing the response message, or empty for notifications
 	 */
 	private Mono<AcpSchema.JSONRPCMessage> handle(AcpSchema.JSONRPCMessage message) {
-		if (message instanceof AcpSchema.JSONRPCResponse response) {
-			logger.debug("Received response: {}", response);
+		if (message instanceof AcpSchema.JSONRPCResponse) {
+AcpSchema.JSONRPCResponse response = (AcpSchema.JSONRPCResponse) message;			logger.debug("Received response: {}", response);
 			if (response.id() != null) {
-				var sink = pendingResponses.remove(response.id());
+				reactor.core.publisher.MonoSink<AcpSchema.JSONRPCResponse> sink = pendingResponses.remove(response.id());
 				if (sink == null) {
 					logger.warn("Unexpected response for unknown id {}", response.id());
 				}
@@ -187,26 +195,26 @@ public class AcpAgentSession implements AcpSession {
 			}
 			return Mono.empty();
 		}
-		else if (message instanceof AcpSchema.JSONRPCRequest request) {
-			logger.debug("Received request: {}", request);
+		else if (message instanceof AcpSchema.JSONRPCRequest) {
+AcpSchema.JSONRPCRequest request = (AcpSchema.JSONRPCRequest) message;			logger.debug("Received request: {}", request);
 			return handleIncomingRequest(request).onErrorResume(error -> {
 				// Preserve error codes from AcpProtocolException, wrap others in INTERNAL_ERROR
 				int errorCode;
 				Object errorData = null;
-				if (error instanceof AcpProtocolException protocolException) {
-					errorCode = protocolException.getCode();
+				if (error instanceof AcpProtocolException) {
+AcpProtocolException protocolException = (AcpProtocolException) error;					errorCode = protocolException.getCode();
 					errorData = protocolException.getData();
 				}
 				else {
 					errorCode = AcpErrorCodes.INTERNAL_ERROR;
 				}
-				var errorResponse = new AcpSchema.JSONRPCResponse(AcpSchema.JSONRPC_VERSION, request.id(), null,
+				AcpSchema.JSONRPCResponse errorResponse = new AcpSchema.JSONRPCResponse(AcpSchema.JSONRPC_VERSION, request.id(), null,
 						new AcpSchema.JSONRPCError(errorCode, error.getMessage(), errorData));
 				return Mono.just(errorResponse);
 			}).map(response -> (AcpSchema.JSONRPCMessage) response);
 		}
-		else if (message instanceof AcpSchema.JSONRPCNotification notification) {
-			logger.debug("Received notification: {}", notification);
+		else if (message instanceof AcpSchema.JSONRPCNotification) {
+AcpSchema.JSONRPCNotification notification = (AcpSchema.JSONRPCNotification) message;			logger.debug("Received notification: {}", notification);
 			return handleIncomingNotification(notification).then(Mono.empty());
 		}
 		else {
@@ -223,7 +231,7 @@ public class AcpAgentSession implements AcpSession {
 	 */
 	private Mono<AcpSchema.JSONRPCResponse> handleIncomingRequest(AcpSchema.JSONRPCRequest request) {
 		return Mono.defer(() -> {
-			var handler = this.requestHandlers.get(request.method());
+			RequestHandler handler = this.requestHandlers.get(request.method());
 			if (handler == null) {
 				MethodNotFoundError error = getMethodNotFoundError(request.method());
 				return Mono.just(new AcpSchema.JSONRPCResponse(AcpSchema.JSONRPC_VERSION, request.id(), null,
@@ -265,14 +273,26 @@ public class AcpAgentSession implements AcpSession {
 	 */
 	@SuppressWarnings("unchecked")
 	private String extractSessionId(Object params) {
-		if (params instanceof Map<?, ?> map) {
+		if (params instanceof Map) {
+			Map<?, ?> map = (Map<?, ?>) params;
 			Object sessionId = map.get("sessionId");
 			return sessionId != null ? sessionId.toString() : "unknown";
 		}
 		return "unknown";
 	}
 
-	record MethodNotFoundError(String method, String message, Object data) {
+	static final class MethodNotFoundError {
+		private final String method;
+		private final String message;
+		private final Object data;
+		MethodNotFoundError(String method, String message, Object data) {
+			this.method = method;
+			this.message = message;
+			this.data = data;
+		}
+		String method() { return this.method; }
+		String message() { return this.message; }
+		Object data() { return this.data; }
 	}
 
 	private MethodNotFoundError getMethodNotFoundError(String method) {
@@ -297,7 +317,7 @@ public class AcpAgentSession implements AcpSession {
 				}
 			}
 
-			var handler = notificationHandlers.get(notification.method());
+			NotificationHandler handler = notificationHandlers.get(notification.method());
 			if (handler == null) {
 				logger.warn("No handler registered for notification method: {}", notification.method());
 				return Mono.empty();
@@ -433,7 +453,8 @@ public class AcpAgentSession implements AcpSession {
 		}
 
 		private static String formatErrorData(Object data) {
-			if (data instanceof java.util.Map<?, ?> map) {
+			if (data instanceof java.util.Map) {
+				java.util.Map<?, ?> map = (java.util.Map<?, ?>) data;
 				// Extract common fields for better readability
 				Object details = map.get("details");
 				if (details != null) {

@@ -48,8 +48,8 @@ class InMemoryTransportPairTest {
 
 		// Client connects and sends
 		pair.clientTransport().connect(msg -> msg).subscribe();
-		var initRequest = new AcpSchema.InitializeRequest(1, new AcpSchema.ClientCapabilities());
-		var jsonRpcRequest = new AcpSchema.JSONRPCRequest(AcpSchema.METHOD_INITIALIZE, "1", initRequest);
+		AcpSchema.InitializeRequest initRequest = new AcpSchema.InitializeRequest(1, new AcpSchema.ClientCapabilities());
+		AcpSchema.JSONRPCRequest jsonRpcRequest = new AcpSchema.JSONRPCRequest(AcpSchema.METHOD_INITIALIZE, "1", initRequest);
 		pair.clientTransport().sendMessage(jsonRpcRequest).block(TIMEOUT);
 
 		assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
@@ -73,8 +73,8 @@ class InMemoryTransportPairTest {
 
 		// Agent starts and sends
 		pair.agentTransport().start(msg -> msg).subscribe();
-		var initResponse = new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of());
-		var jsonRpcResponse = new AcpSchema.JSONRPCResponse(AcpSchema.JSONRPC_VERSION, "1", initResponse, null);
+		AcpSchema.InitializeResponse initResponse = new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), java.util.Collections.emptyList());
+		AcpSchema.JSONRPCResponse jsonRpcResponse = new AcpSchema.JSONRPCResponse(AcpSchema.JSONRPC_VERSION, "1", initResponse, null);
 		pair.agentTransport().sendMessage(jsonRpcResponse).block(TIMEOUT);
 
 		assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();

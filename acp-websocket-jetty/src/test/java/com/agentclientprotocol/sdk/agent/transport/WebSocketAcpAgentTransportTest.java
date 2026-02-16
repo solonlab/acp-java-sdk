@@ -6,7 +6,7 @@ package com.agentclientprotocol.sdk.agent.transport;
 
 import java.time.Duration;
 
-import io.modelcontextprotocol.json.McpJsonMapper;
+import com.agentclientprotocol.sdk.json.McpJsonMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;

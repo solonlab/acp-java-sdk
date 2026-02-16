@@ -5,6 +5,7 @@
 package com.agentclientprotocol.sdk.integration;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -119,7 +120,7 @@ class CleanShutdownIT {
 		AcpSyncAgent agent = AcpAgent.sync(transportPair.agentTransport())
 			.requestTimeout(Duration.ofSeconds(5))
 			.initializeHandler(request ->
-				new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of()))
+				new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList()))
 			.build();
 
 		// Track whether await() returned
@@ -171,7 +172,7 @@ class CleanShutdownIT {
 		AcpSyncAgent agent = AcpAgent.sync(transportPair.agentTransport())
 			.requestTimeout(Duration.ofSeconds(5))
 			.initializeHandler(request ->
-				new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of()))
+				new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList()))
 			.build();
 
 		// Track whether run() returned

@@ -5,6 +5,7 @@
 package com.agentclientprotocol.sdk.client;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -65,7 +66,7 @@ class ClientCapabilitiesBuilderTest {
 			.initializeHandler(request -> {
 				receivedCapabilities.set(request.clientCapabilities());
 				capabilitiesLatch.countDown();
-				return Mono.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of()));
+				return Mono.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList()));
 			})
 			.build();
 
@@ -126,7 +127,7 @@ class ClientCapabilitiesBuilderTest {
 			.initializeHandler(request -> {
 				receivedCapabilities.set(request.clientCapabilities());
 				capabilitiesLatch.countDown();
-				return Mono.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of()));
+				return Mono.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList()));
 			})
 			.build();
 

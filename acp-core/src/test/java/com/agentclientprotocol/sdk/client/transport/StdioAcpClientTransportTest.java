@@ -4,16 +4,18 @@
 
 package com.agentclientprotocol.sdk.client.transport;
 
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.json.TypeRef;
+import com.agentclientprotocol.sdk.json.McpJsonMapper;
+import com.agentclientprotocol.sdk.json.TypeRef;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.agentclientprotocol.sdk.TestUtil;
 
 /**
  * Test suite for {@link StdioAcpClientTransport}.
@@ -74,7 +76,7 @@ class StdioAcpClientTransportTest {
 		StdioAcpClientTransport transport = new StdioAcpClientTransport(params, mapper);
 
 		// Test unmarshaling a simple map to String
-		Map<String, Object> data = Map.of("value", "test-string");
+		Map<String, Object> data = TestUtil.mapOf("value", "test-string");
 		String result = transport.unmarshalFrom(data.get("value"), new TypeRef<String>() {
 		});
 
@@ -89,8 +91,8 @@ class StdioAcpClientTransportTest {
 		StdioAcpClientTransport transport = new StdioAcpClientTransport(params, mapper);
 
 		// Test unmarshaling a map to InitializeResponse
-		Map<String, Object> responseData = Map.of("protocolVersion", 1, "agentCapabilities",
-				Map.of("loadSession", true), "authMethods", List.of());
+		Map<String, Object> responseData = TestUtil.mapOf("protocolVersion", 1, "agentCapabilities",
+				TestUtil.mapOf("loadSession", true), "authMethods", Collections.emptyList());
 
 		AcpSchema.InitializeResponse result = transport.unmarshalFrom(responseData,
 				new TypeRef<AcpSchema.InitializeResponse>() {
@@ -121,7 +123,7 @@ class StdioAcpClientTransportTest {
 		StdioAcpClientTransport transport = new StdioAcpClientTransport(params, mapper);
 
 		// Create a TextContent-like map
-		Map<String, Object> contentData = Map.of("type", "text", "text", "Hello World");
+		Map<String, Object> contentData = TestUtil.mapOf("type", "text", "text", "Hello World");
 
 		AcpSchema.TextContent result = transport.unmarshalFrom(contentData, new TypeRef<AcpSchema.TextContent>() {
 		});
@@ -152,7 +154,7 @@ class StdioAcpClientTransportTest {
 		McpJsonMapper mapper = McpJsonMapper.getDefault();
 		StdioAcpClientTransport transport = new StdioAcpClientTransport(params, mapper);
 
-		Map<String, Object> data = Map.of("sessionId", "test-123");
+		Map<String, Object> data = TestUtil.mapOf("sessionId", "test-123");
 
 		AcpSchema.CancelNotification result = transport.unmarshalFrom(data,
 				new TypeRef<AcpSchema.CancelNotification>() {
@@ -182,9 +184,9 @@ class StdioAcpClientTransportTest {
 		StdioAcpClientTransport transport = new StdioAcpClientTransport(params, mapper);
 
 		// Test that integers, strings, booleans are preserved
-		Map<String, Object> complexData = Map.of("protocolVersion", 1, // integer
-				"authMethods", List.of(), // list
-				"agentCapabilities", Map.of("loadSession", true) // nested map with boolean
+		Map<String, Object> complexData = TestUtil.mapOf("protocolVersion", 1, // integer
+				"authMethods", Collections.emptyList(), // list
+				"agentCapabilities", TestUtil.mapOf("loadSession", true) // nested map with boolean
 		);
 
 		AcpSchema.InitializeResponse result = transport.unmarshalFrom(complexData,

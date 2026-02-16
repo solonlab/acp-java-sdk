@@ -15,8 +15,8 @@ import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import io.modelcontextprotocol.json.TypeRef;
-import io.modelcontextprotocol.json.McpJsonMapper;
+import com.agentclientprotocol.sdk.json.TypeRef;
+import com.agentclientprotocol.sdk.json.McpJsonMapper;
 import com.agentclientprotocol.sdk.spec.AcpClientTransport;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.agentclientprotocol.sdk.spec.AcpSchema.JSONRPCMessage;
@@ -327,7 +327,7 @@ public class StdioAcpClientTransport implements AcpClientTransport {
 						jsonMessage = jsonMessage.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n");
 						logger.trace("SEND: {}", jsonMessage);
 
-						var os = this.process.getOutputStream();
+						java.io.OutputStream os = this.process.getOutputStream();
 						synchronized (os) {
 							os.write(jsonMessage.getBytes(StandardCharsets.UTF_8));
 							os.write("\n".getBytes(StandardCharsets.UTF_8));

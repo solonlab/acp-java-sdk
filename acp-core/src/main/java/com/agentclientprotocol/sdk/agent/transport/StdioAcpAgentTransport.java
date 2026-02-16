@@ -20,8 +20,8 @@ import com.agentclientprotocol.sdk.spec.AcpAgentTransport;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.agentclientprotocol.sdk.spec.AcpSchema.JSONRPCMessage;
 import com.agentclientprotocol.sdk.util.Assert;
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.json.TypeRef;
+import com.agentclientprotocol.sdk.json.McpJsonMapper;
+import com.agentclientprotocol.sdk.json.TypeRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -134,7 +134,7 @@ public class StdioAcpAgentTransport implements AcpAgentTransport {
 
 	@Override
 	public List<Integer> protocolVersions() {
-		return List.of(AcpSchema.LATEST_PROTOCOL_VERSION);
+		return java.util.Collections.singletonList(AcpSchema.LATEST_PROTOCOL_VERSION);
 	}
 
 	@Override

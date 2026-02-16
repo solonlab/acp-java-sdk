@@ -49,10 +49,11 @@ public class MonoHandler implements ReturnValueHandler {
 	 */
 	public static Class<?> getMonoGenericType(AcpMethodParameter returnType) {
 		Type genericType = returnType.getGenericType();
-		if (genericType instanceof ParameterizedType pt) {
+		if (genericType instanceof ParameterizedType) {
+			ParameterizedType pt = (ParameterizedType) genericType;
 			Type[] typeArgs = pt.getActualTypeArguments();
-			if (typeArgs.length > 0 && typeArgs[0] instanceof Class<?> c) {
-				return c;
+			if (typeArgs.length > 0 && typeArgs[0] instanceof Class<?>) {
+				return (Class<?>) typeArgs[0];
 			}
 		}
 		return Object.class;

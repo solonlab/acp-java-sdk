@@ -5,6 +5,7 @@
 package com.agentclientprotocol.sdk.test;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -34,7 +35,7 @@ import reactor.core.publisher.Mono;
  * <pre>{@code
  * InMemoryTransportPair transportPair = InMemoryTransportPair.create();
  * MockAcpAgent mockAgent = MockAcpAgent.builder(transportPair.agentTransport())
- *     .initializeResponse(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of()))
+ *     .initializeResponse(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList()))
  *     .promptResponse(request -> new AcpSchema.PromptResponse(AcpSchema.StopReason.END_TURN))
  *     .build();
  *
@@ -116,7 +117,7 @@ public class MockAcpAgent {
 	 * @return The list of initialize requests
 	 */
 	public List<AcpSchema.InitializeRequest> getReceivedInitRequests() {
-		return List.copyOf(receivedInitRequests);
+		return Collections.unmodifiableList(new java.util.ArrayList<>(receivedInitRequests));
 	}
 
 	/**
@@ -124,7 +125,7 @@ public class MockAcpAgent {
 	 * @return The list of new session requests
 	 */
 	public List<AcpSchema.NewSessionRequest> getReceivedNewSessionRequests() {
-		return List.copyOf(receivedNewSessionRequests);
+		return Collections.unmodifiableList(new java.util.ArrayList<>(receivedNewSessionRequests));
 	}
 
 	/**
@@ -132,7 +133,7 @@ public class MockAcpAgent {
 	 * @return The list of prompts
 	 */
 	public List<AcpSchema.PromptRequest> getReceivedPrompts() {
-		return List.copyOf(receivedPrompts);
+		return Collections.unmodifiableList(new java.util.ArrayList<>(receivedPrompts));
 	}
 
 	/**
@@ -140,7 +141,7 @@ public class MockAcpAgent {
 	 * @return The list of cancellations
 	 */
 	public List<AcpSchema.CancelNotification> getReceivedCancellations() {
-		return List.copyOf(receivedCancellations);
+		return Collections.unmodifiableList(new java.util.ArrayList<>(receivedCancellations));
 	}
 
 	/**
@@ -192,7 +193,7 @@ public class MockAcpAgent {
 		private Builder(AcpAgentTransport transport) {
 			this.transport = transport;
 			// Set defaults
-			this.initializeResponse = new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of());
+			this.initializeResponse = new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList());
 			this.newSessionResponse = new AcpSchema.NewSessionResponse("mock-session", null, null);
 			this.promptResponseProvider = request -> new AcpSchema.PromptResponse(AcpSchema.StopReason.END_TURN);
 		}
@@ -267,7 +268,7 @@ public class MockAcpAgent {
 
 			// Replace the delegate using reflection (a bit ugly but avoids circular reference issues)
 			try {
-				var field = MockAcpAgent.class.getDeclaredField("delegate");
+				java.lang.reflect.Field field = MockAcpAgent.class.getDeclaredField("delegate");
 				field.setAccessible(true);
 				field.set(mockAgent, delegate);
 			}

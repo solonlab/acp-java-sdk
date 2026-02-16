@@ -20,6 +20,7 @@ import com.agentclientprotocol.sdk.annotation.SetSessionModel;
 import com.agentclientprotocol.sdk.client.AcpAsyncClient;
 import com.agentclientprotocol.sdk.client.AcpClient;
 import com.agentclientprotocol.sdk.spec.AcpSchema.CancelNotification;
+import com.agentclientprotocol.sdk.spec.AcpSchema.ContentBlock;
 import com.agentclientprotocol.sdk.spec.AcpSchema.InitializeRequest;
 import com.agentclientprotocol.sdk.spec.AcpSchema.InitializeResponse;
 import com.agentclientprotocol.sdk.spec.AcpSchema.LoadSessionRequest;
@@ -90,13 +91,13 @@ class AcpAgentSupportTest {
 		assertThat(initResp.protocolVersion()).isEqualTo(1);
 
 		// New session
-		NewSessionResponse sessionResp = client.newSession(new NewSessionRequest("/workspace", List.of()))
+		NewSessionResponse sessionResp = client.newSession(new NewSessionRequest("/workspace", java.util.Collections.emptyList()))
 				.block(TIMEOUT);
 		assertThat(sessionResp.sessionId()).isEqualTo("test-session");
 
 		// Prompt
 		PromptResponse promptResp = client
-				.prompt(new PromptRequest("test-session", List.of(new TextContent("Hello")))).block(TIMEOUT);
+				.prompt(new PromptRequest("test-session", java.util.Collections.<ContentBlock>singletonList(new TextContent("Hello")))).block(TIMEOUT);
 		assertThat(promptResp.stopReason()).isNotNull();
 	}
 
@@ -141,8 +142,8 @@ class AcpAgentSupportTest {
 				.build();
 
 		client.initialize(new InitializeRequest(1, null)).block(TIMEOUT);
-		client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-		client.prompt(new PromptRequest("capture-session", List.of(new TextContent("Test message")))).block(TIMEOUT);
+		client.newSession(new NewSessionRequest("/workspace", java.util.Collections.emptyList())).block(TIMEOUT);
+		client.prompt(new PromptRequest("capture-session", java.util.Collections.<ContentBlock>singletonList(new TextContent("Test message")))).block(TIMEOUT);
 
 		assertThat(receivedSessionId.get()).isEqualTo("capture-session");
 		assertThat(receivedPrompt.get()).contains("Test message");
@@ -183,8 +184,8 @@ class AcpAgentSupportTest {
 				.build();
 
 		client.initialize(new InitializeRequest(1, null)).block(TIMEOUT);
-		client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-		PromptResponse resp = client.prompt(new PromptRequest("string-session", List.of(new TextContent("test"))))
+		client.newSession(new NewSessionRequest("/workspace", java.util.Collections.emptyList())).block(TIMEOUT);
+		PromptResponse resp = client.prompt(new PromptRequest("string-session", java.util.Collections.<ContentBlock>singletonList(new TextContent("test"))))
 				.block(TIMEOUT);
 
 		// String should be converted to PromptResponse with END_TURN
@@ -230,8 +231,8 @@ class AcpAgentSupportTest {
 				.build();
 
 		client.initialize(new InitializeRequest(1, null)).block(TIMEOUT);
-		client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
-		PromptResponse resp = client.prompt(new PromptRequest("void-session", List.of(new TextContent("test"))))
+		client.newSession(new NewSessionRequest("/workspace", java.util.Collections.emptyList())).block(TIMEOUT);
+		PromptResponse resp = client.prompt(new PromptRequest("void-session", java.util.Collections.<ContentBlock>singletonList(new TextContent("test"))))
 				.block(TIMEOUT);
 
 		assertThat(handlerCalled.get()).isTrue();
@@ -271,7 +272,7 @@ class AcpAgentSupportTest {
 				.build();
 
 		client.initialize(new InitializeRequest(1, null)).block(TIMEOUT);
-		LoadSessionResponse resp = client.loadSession(new LoadSessionRequest("existing-session", "/workspace", List.of()))
+		LoadSessionResponse resp = client.loadSession(new LoadSessionRequest("existing-session", "/workspace", java.util.Collections.emptyList()))
 				.block(TIMEOUT);
 
 		assertThat(loadedSessionId.get()).isEqualTo("existing-session");
@@ -316,7 +317,7 @@ class AcpAgentSupportTest {
 				.build();
 
 		client.initialize(new InitializeRequest(1, null)).block(TIMEOUT);
-		client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
+		client.newSession(new NewSessionRequest("/workspace", java.util.Collections.emptyList())).block(TIMEOUT);
 		client.setSessionMode(new SetSessionModeRequest("mode-session", "code-review")).block(TIMEOUT);
 
 		assertThat(receivedModeId.get()).isEqualTo("code-review");
@@ -360,7 +361,7 @@ class AcpAgentSupportTest {
 				.build();
 
 		client.initialize(new InitializeRequest(1, null)).block(TIMEOUT);
-		client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
+		client.newSession(new NewSessionRequest("/workspace", java.util.Collections.emptyList())).block(TIMEOUT);
 		client.setSessionModel(new SetSessionModelRequest("model-session", "gpt-4")).block(TIMEOUT);
 
 		assertThat(receivedModelId.get()).isEqualTo("gpt-4");
@@ -403,7 +404,7 @@ class AcpAgentSupportTest {
 				.build();
 
 		client.initialize(new InitializeRequest(1, null)).block(TIMEOUT);
-		client.newSession(new NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
+		client.newSession(new NewSessionRequest("/workspace", java.util.Collections.emptyList())).block(TIMEOUT);
 		client.cancel(new CancelNotification("cancel-session")).block(TIMEOUT);
 
 		// Give time for the notification to be processed

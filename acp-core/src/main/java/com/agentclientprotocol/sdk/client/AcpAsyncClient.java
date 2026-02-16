@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.agentclientprotocol.sdk.capabilities.NegotiatedCapabilities;
 import com.agentclientprotocol.sdk.spec.AcpClientTransport;
-import io.modelcontextprotocol.json.TypeRef;
+import com.agentclientprotocol.sdk.json.TypeRef;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.agentclientprotocol.sdk.spec.AcpSession;
 import com.agentclientprotocol.sdk.util.Assert;
@@ -67,12 +67,12 @@ import reactor.core.publisher.Mono;
  *
  * // Create session and interact
  * String sessionId = client
- *     .newSession(new AcpSchema.NewSessionRequest("/workspace", List.of()))
+ *     .newSession(new AcpSchema.NewSessionRequest("/workspace", java.util.Collections.emptyList()))
  *     .map(AcpSchema.NewSessionResponse::sessionId)
  *     .block();
  *
  * AcpSchema.PromptResponse response = client
- *     .prompt(new AcpSchema.PromptRequest(sessionId, List.of(new AcpSchema.TextContent("Fix the bug"))))
+ *     .prompt(new AcpSchema.PromptRequest(sessionId, java.util.Collections.singletonList(new AcpSchema.TextContent("Fix the bug"))))
  *     .block();
  *
  * client.closeGracefully().block();
@@ -87,28 +87,28 @@ public class AcpAsyncClient {
 
 	private static final Logger logger = LoggerFactory.getLogger(AcpAsyncClient.class);
 
-	private static final TypeRef<AcpSchema.InitializeResponse> INITIALIZE_RESPONSE_TYPE_REF = new TypeRef<>() {
+	private static final TypeRef<AcpSchema.InitializeResponse> INITIALIZE_RESPONSE_TYPE_REF = new TypeRef<AcpSchema.InitializeResponse>() {
 	};
 
-	private static final TypeRef<AcpSchema.AuthenticateResponse> AUTHENTICATE_RESPONSE_TYPE_REF = new TypeRef<>() {
+	private static final TypeRef<AcpSchema.AuthenticateResponse> AUTHENTICATE_RESPONSE_TYPE_REF = new TypeRef<AcpSchema.AuthenticateResponse>() {
 	};
 
-	private static final TypeRef<AcpSchema.NewSessionResponse> NEW_SESSION_RESPONSE_TYPE_REF = new TypeRef<>() {
+	private static final TypeRef<AcpSchema.NewSessionResponse> NEW_SESSION_RESPONSE_TYPE_REF = new TypeRef<AcpSchema.NewSessionResponse>() {
 	};
 
-	private static final TypeRef<AcpSchema.LoadSessionResponse> LOAD_SESSION_RESPONSE_TYPE_REF = new TypeRef<>() {
+	private static final TypeRef<AcpSchema.LoadSessionResponse> LOAD_SESSION_RESPONSE_TYPE_REF = new TypeRef<AcpSchema.LoadSessionResponse>() {
 	};
 
-	private static final TypeRef<AcpSchema.SetSessionModeResponse> SET_SESSION_MODE_RESPONSE_TYPE_REF = new TypeRef<>() {
+	private static final TypeRef<AcpSchema.SetSessionModeResponse> SET_SESSION_MODE_RESPONSE_TYPE_REF = new TypeRef<AcpSchema.SetSessionModeResponse>() {
 	};
 
-	private static final TypeRef<AcpSchema.SetSessionModelResponse> SET_SESSION_MODEL_RESPONSE_TYPE_REF = new TypeRef<>() {
+	private static final TypeRef<AcpSchema.SetSessionModelResponse> SET_SESSION_MODEL_RESPONSE_TYPE_REF = new TypeRef<AcpSchema.SetSessionModelResponse>() {
 	};
 
-	private static final TypeRef<AcpSchema.PromptResponse> PROMPT_RESPONSE_TYPE_REF = new TypeRef<>() {
+	private static final TypeRef<AcpSchema.PromptResponse> PROMPT_RESPONSE_TYPE_REF = new TypeRef<AcpSchema.PromptResponse>() {
 	};
 
-	private static final TypeRef<Void> VOID_TYPE_REF = new TypeRef<>() {
+	private static final TypeRef<Void> VOID_TYPE_REF = new TypeRef<Void>() {
 	};
 
 	/**

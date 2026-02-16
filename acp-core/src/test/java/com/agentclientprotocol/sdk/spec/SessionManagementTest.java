@@ -7,12 +7,13 @@ package com.agentclientprotocol.sdk.spec;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.json.TypeRef;
+import com.agentclientprotocol.sdk.json.McpJsonMapper;
+import com.agentclientprotocol.sdk.json.TypeRef;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,7 +39,7 @@ class SessionManagementTest {
 			if (is == null) {
 				throw new IOException("Golden file not found: " + path);
 			}
-			return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+			java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream(); byte[] buf = new byte[4096]; int len; while ((len = is.read(buf)) != -1) { baos.write(buf, 0, len); } return new String(baos.toByteArray(), StandardCharsets.UTF_8);
 		}
 	}
 
@@ -67,7 +68,7 @@ class SessionManagementTest {
 	@Test
 	void loadSessionRequestRoundTrip() throws IOException {
 		AcpSchema.LoadSessionRequest original = new AcpSchema.LoadSessionRequest("sess_test123", "/workspace",
-				List.of(new AcpSchema.McpServerStdio("fs", "/bin/mcp", List.of(), List.of())));
+				java.util.Arrays.asList(new AcpSchema.McpServerStdio("fs", "/bin/mcp", Collections.emptyList(), Collections.emptyList())));
 
 		String json = jsonMapper.writeValueAsString(original);
 		AcpSchema.LoadSessionRequest result = jsonMapper.readValue(json,
@@ -108,7 +109,7 @@ class SessionManagementTest {
 
 	@Test
 	void loadSessionResponseRoundTrip() throws IOException {
-		List<AcpSchema.SessionMode> modes = List.of(new AcpSchema.SessionMode("ask", "Ask", "Ask for permission"),
+		List<AcpSchema.SessionMode> modes = java.util.Arrays.asList(new AcpSchema.SessionMode("ask", "Ask", "Ask for permission"),
 				new AcpSchema.SessionMode("code", "Code", "Full access"));
 
 		AcpSchema.LoadSessionResponse original = new AcpSchema.LoadSessionResponse(
@@ -172,7 +173,7 @@ class SessionManagementTest {
 
 	@Test
 	void newSessionResponseWithModesRoundTrip() throws IOException {
-		List<AcpSchema.SessionMode> modes = List.of(new AcpSchema.SessionMode("ask", "Ask", null),
+		List<AcpSchema.SessionMode> modes = java.util.Arrays.asList(new AcpSchema.SessionMode("ask", "Ask", null),
 				new AcpSchema.SessionMode("code", "Code", "Write code"));
 
 		AcpSchema.NewSessionResponse original = new AcpSchema.NewSessionResponse("sess_new123",
@@ -194,7 +195,7 @@ class SessionManagementTest {
 
 	@Test
 	void sessionModeStateWithAllFields() throws IOException {
-		List<AcpSchema.SessionMode> modes = List.of(
+		List<AcpSchema.SessionMode> modes = java.util.Arrays.asList(
 				new AcpSchema.SessionMode("ask", "Ask", "Request permission before making any changes"),
 				new AcpSchema.SessionMode("architect", "Architect",
 						"Design and plan software systems without implementation"),
@@ -272,7 +273,7 @@ class SessionManagementTest {
 
 	@Test
 	void loadSessionRequestWithEmptyMcpServers() throws IOException {
-		AcpSchema.LoadSessionRequest request = new AcpSchema.LoadSessionRequest("sess_test", "/project", List.of());
+		AcpSchema.LoadSessionRequest request = new AcpSchema.LoadSessionRequest("sess_test", "/project", Collections.emptyList());
 
 		String json = jsonMapper.writeValueAsString(request);
 		AcpSchema.LoadSessionRequest result = jsonMapper.readValue(json,

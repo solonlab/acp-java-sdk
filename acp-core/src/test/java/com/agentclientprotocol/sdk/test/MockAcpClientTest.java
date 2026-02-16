@@ -5,6 +5,7 @@
 package com.agentclientprotocol.sdk.test;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -30,7 +31,7 @@ class MockAcpClientTest {
 		try {
 			AcpAsyncAgent agent = AcpAgent.async(pair.agentTransport())
 				.initializeHandler(request -> Mono
-					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of())))
+					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList())))
 				.newSessionHandler(request -> Mono.just(new AcpSchema.NewSessionResponse("test-session", null, null)))
 				.promptHandler(
 						(request, updater) -> Mono.just(new AcpSchema.PromptResponse(AcpSchema.StopReason.END_TURN)))
@@ -67,7 +68,7 @@ class MockAcpClientTest {
 
 			AcpAsyncAgent agent = AcpAgent.async(pair.agentTransport())
 				.initializeHandler(request -> Mono
-					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of())))
+					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList())))
 				.newSessionHandler(request -> Mono.just(new AcpSchema.NewSessionResponse("update-session", null, null)))
 				.promptHandler((request, updater) -> {
 					// Send update during prompt
@@ -110,12 +111,12 @@ class MockAcpClientTest {
 
 			AcpAsyncAgent agent = AcpAgent.async(pair.agentTransport())
 				.initializeHandler(request -> Mono
-					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of())))
+					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList())))
 				.newSessionHandler(request -> Mono.just(new AcpSchema.NewSessionResponse("perm-session", null, null)))
 				.promptHandler((request, updater) -> {
 					AcpSchema.ToolCallUpdate toolCall = new AcpSchema.ToolCallUpdate("tool-1", "Edit File",
 							AcpSchema.ToolKind.EDIT, AcpSchema.ToolCallStatus.PENDING, null, null, null, null);
-					List<AcpSchema.PermissionOption> options = List.of(new AcpSchema.PermissionOption("allow", "Allow",
+					List<AcpSchema.PermissionOption> options = java.util.Arrays.asList(new AcpSchema.PermissionOption("allow", "Allow",
 							AcpSchema.PermissionOptionKind.ALLOW_ONCE));
 
 					return agentRef.get()
@@ -156,7 +157,7 @@ class MockAcpClientTest {
 
 			AcpAsyncAgent agent = AcpAgent.async(pair.agentTransport())
 				.initializeHandler(request -> Mono
-					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of())))
+					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList())))
 				.newSessionHandler(request -> Mono.just(new AcpSchema.NewSessionResponse("file-session", null, null)))
 				.promptHandler((request, updater) -> {
 					return agentRef.get()

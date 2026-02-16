@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import com.agentclientprotocol.sdk.TestUtil;
 
 /**
  * Tests for typed handler API with auto-unmarshalling.
@@ -58,7 +59,7 @@ class TypedHandlerTest {
 				AcpSchema.JSONRPC_VERSION,
 				"test-id",
 				AcpSchema.METHOD_FS_READ_TEXT_FILE,
-				Map.of("path", testPath)
+				TestUtil.mapOf("path", testPath)
 		);
 		transport.simulateIncomingMessage(request);
 
@@ -110,7 +111,7 @@ class TypedHandlerTest {
 				AcpSchema.JSONRPC_VERSION,
 				"test-id",
 				AcpSchema.METHOD_FS_WRITE_TEXT_FILE,
-				Map.of("path", testPath, "content", testContent)
+				TestUtil.mapOf("path", testPath, "content", testContent)
 		);
 		transport.simulateIncomingMessage(request);
 
@@ -153,7 +154,7 @@ class TypedHandlerTest {
 			.build();
 
 		// Simulate incoming request from agent - toolCall is a nested structure
-		Map<String, Object> toolCall = Map.of(
+		Map<String, Object> toolCall = TestUtil.mapOf(
 				"title", "Read File",
 				"description", "Reading test.txt"
 		);
@@ -161,7 +162,7 @@ class TypedHandlerTest {
 				AcpSchema.JSONRPC_VERSION,
 				"test-id",
 				AcpSchema.METHOD_SESSION_REQUEST_PERMISSION,
-				Map.of("sessionId", testSessionId, "toolCall", toolCall)
+				TestUtil.mapOf("sessionId", testSessionId, "toolCall", toolCall)
 		);
 		transport.simulateIncomingMessage(request);
 
@@ -203,7 +204,7 @@ class TypedHandlerTest {
 				AcpSchema.JSONRPC_VERSION,
 				"test-id",
 				AcpSchema.METHOD_FS_READ_TEXT_FILE,
-				Map.of("path", testPath)
+				TestUtil.mapOf("path", testPath)
 		);
 		transport.simulateIncomingMessage(request);
 
@@ -245,7 +246,7 @@ class TypedHandlerTest {
 				AcpSchema.JSONRPC_VERSION,
 				"test-id",
 				AcpSchema.METHOD_FS_READ_TEXT_FILE,
-				Map.of("path", "/nonexistent")
+				TestUtil.mapOf("path", "/nonexistent")
 		);
 		transport.simulateIncomingMessage(request);
 
@@ -294,7 +295,7 @@ class TypedHandlerTest {
 				AcpSchema.JSONRPC_VERSION,
 				"test-id",
 				AcpSchema.METHOD_TERMINAL_CREATE,
-				Map.of("sessionId", testSessionId, "command", testCommand)
+				TestUtil.mapOf("sessionId", testSessionId, "command", testCommand)
 		);
 		transport.simulateIncomingMessage(request);
 
@@ -336,7 +337,7 @@ class TypedHandlerTest {
 				AcpSchema.JSONRPC_VERSION,
 				"test-id",
 				AcpSchema.METHOD_TERMINAL_OUTPUT,
-				Map.of("sessionId", testSessionId, "terminalId", testTerminalId)
+				TestUtil.mapOf("sessionId", testSessionId, "terminalId", testTerminalId)
 		);
 		transport.simulateIncomingMessage(request);
 
@@ -375,7 +376,7 @@ class TypedHandlerTest {
 				AcpSchema.JSONRPC_VERSION,
 				"test-id",
 				AcpSchema.METHOD_TERMINAL_RELEASE,
-				Map.of("sessionId", "session-123", "terminalId", testTerminalId)
+				TestUtil.mapOf("sessionId", "session-123", "terminalId", testTerminalId)
 		);
 		transport.simulateIncomingMessage(request);
 
@@ -414,7 +415,7 @@ class TypedHandlerTest {
 				AcpSchema.JSONRPC_VERSION,
 				"test-id",
 				AcpSchema.METHOD_TERMINAL_WAIT_FOR_EXIT,
-				Map.of("sessionId", "session-123", "terminalId", testTerminalId)
+				TestUtil.mapOf("sessionId", "session-123", "terminalId", testTerminalId)
 		);
 		transport.simulateIncomingMessage(request);
 
@@ -453,7 +454,7 @@ class TypedHandlerTest {
 				AcpSchema.JSONRPC_VERSION,
 				"test-id",
 				AcpSchema.METHOD_TERMINAL_KILL,
-				Map.of("sessionId", "session-123", "terminalId", testTerminalId)
+				TestUtil.mapOf("sessionId", "session-123", "terminalId", testTerminalId)
 		);
 		transport.simulateIncomingMessage(request);
 

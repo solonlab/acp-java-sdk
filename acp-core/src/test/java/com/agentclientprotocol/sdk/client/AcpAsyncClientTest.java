@@ -5,6 +5,7 @@
 package com.agentclientprotocol.sdk.client;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -12,7 +13,7 @@ import java.util.function.Function;
 
 import com.agentclientprotocol.sdk.MockAcpClientTransport;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
-import io.modelcontextprotocol.json.TypeRef;
+import com.agentclientprotocol.sdk.json.TypeRef;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
@@ -32,19 +33,19 @@ class AcpAsyncClientTest {
 	private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
 	private static final AcpSchema.InitializeResponse MOCK_INIT_RESPONSE = new AcpSchema.InitializeResponse(1,
-			new AcpSchema.AgentCapabilities(null, null, null), List.of());
+			new AcpSchema.AgentCapabilities(null, null, null), Collections.emptyList());
 
 	@Test
 	void testConstructorWithNullSession() {
-		var transport = new MockAcpClientTransport();
+		MockAcpClientTransport transport = new MockAcpClientTransport();
 		assertThatThrownBy(() -> new AcpAsyncClient(null, transport)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("Session must not be null");
 	}
 
 	@Test
 	void testConstructorWithNullTransport() {
-		var transport = new MockAcpClientTransport();
-		var session = new com.agentclientprotocol.sdk.spec.AcpClientSession(TIMEOUT, transport, Map.of(), Map.of(),
+		MockAcpClientTransport transport = new MockAcpClientTransport();
+		com.agentclientprotocol.sdk.spec.AcpClientSession session = new com.agentclientprotocol.sdk.spec.AcpClientSession(TIMEOUT, transport, Collections.emptyMap(), Collections.emptyMap(),
 				Function.identity());
 		assertThatThrownBy(() -> new AcpAsyncClient(session, null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("Transport must not be null");
@@ -58,7 +59,7 @@ class AcpAsyncClientTest {
 
 	@Test
 	void testBuilderWithNullTimeout() {
-		var transport = new MockAcpClientTransport();
+		MockAcpClientTransport transport = new MockAcpClientTransport();
 		assertThatThrownBy(() -> AcpClient.async(transport).requestTimeout(null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("Request timeout must not be null");
@@ -67,7 +68,7 @@ class AcpAsyncClientTest {
 	@Test
 	void testInitialize() {
 		// Set up mock transport that responds to initialize
-		var transport = createMockTransportWithInitialize();
+		MockAcpClientTransport transport = createMockTransportWithInitialize();
 
 		AcpAsyncClient client = AcpClient.async(transport).requestTimeout(TIMEOUT).build();
 
@@ -85,7 +86,7 @@ class AcpAsyncClientTest {
 
 	@Test
 	void testInitializeWithNullRequest() {
-		var transport = new MockAcpClientTransport();
+		MockAcpClientTransport transport = new MockAcpClientTransport();
 		AcpAsyncClient client = AcpClient.async(transport).requestTimeout(TIMEOUT).build();
 
 		assertThatThrownBy(() -> client.initialize(null)).isInstanceOf(IllegalArgumentException.class)
@@ -96,7 +97,7 @@ class AcpAsyncClientTest {
 
 	@Test
 	void testAuthenticate() {
-		var transport = createMockTransportWithAuthMethods();
+		MockAcpClientTransport transport = createMockTransportWithAuthMethods();
 
 		AcpAsyncClient client = AcpClient.async(transport).requestTimeout(TIMEOUT).build();
 
@@ -111,7 +112,7 @@ class AcpAsyncClientTest {
 
 	@Test
 	void testAuthenticateWithNullRequest() {
-		var transport = new MockAcpClientTransport();
+		MockAcpClientTransport transport = new MockAcpClientTransport();
 		AcpAsyncClient client = AcpClient.async(transport).requestTimeout(TIMEOUT).build();
 
 		assertThatThrownBy(() -> client.authenticate(null)).isInstanceOf(IllegalArgumentException.class)
@@ -122,11 +123,11 @@ class AcpAsyncClientTest {
 
 	@Test
 	void testNewSession() {
-		var transport = createMockTransportWithSession();
+		MockAcpClientTransport transport = createMockTransportWithSession();
 
 		AcpAsyncClient client = AcpClient.async(transport).requestTimeout(TIMEOUT).build();
 
-		AcpSchema.NewSessionRequest sessionRequest = new AcpSchema.NewSessionRequest("/workspace", List.of());
+		AcpSchema.NewSessionRequest sessionRequest = new AcpSchema.NewSessionRequest("/workspace", Collections.emptyList());
 
 		StepVerifier.create(client.newSession(sessionRequest)).consumeNextWith(response -> {
 			assertThat(response).isNotNull();
@@ -138,7 +139,7 @@ class AcpAsyncClientTest {
 
 	@Test
 	void testNewSessionWithNullRequest() {
-		var transport = new MockAcpClientTransport();
+		MockAcpClientTransport transport = new MockAcpClientTransport();
 		AcpAsyncClient client = AcpClient.async(transport).requestTimeout(TIMEOUT).build();
 
 		assertThatThrownBy(() -> client.newSession(null)).isInstanceOf(IllegalArgumentException.class)
@@ -149,11 +150,11 @@ class AcpAsyncClientTest {
 
 	@Test
 	void testLoadSession() {
-		var transport = createMockTransportWithLoadSession();
+		MockAcpClientTransport transport = createMockTransportWithLoadSession();
 
 		AcpAsyncClient client = AcpClient.async(transport).requestTimeout(TIMEOUT).build();
 
-		AcpSchema.LoadSessionRequest loadRequest = new AcpSchema.LoadSessionRequest("session-123", null, List.of());
+		AcpSchema.LoadSessionRequest loadRequest = new AcpSchema.LoadSessionRequest("session-123", null, Collections.emptyList());
 
 		StepVerifier.create(client.loadSession(loadRequest)).consumeNextWith(response -> {
 			assertThat(response).isNotNull();
@@ -164,7 +165,7 @@ class AcpAsyncClientTest {
 
 	@Test
 	void testLoadSessionWithNullRequest() {
-		var transport = new MockAcpClientTransport();
+		MockAcpClientTransport transport = new MockAcpClientTransport();
 		AcpAsyncClient client = AcpClient.async(transport).requestTimeout(TIMEOUT).build();
 
 		assertThatThrownBy(() -> client.loadSession(null)).isInstanceOf(IllegalArgumentException.class)
@@ -175,7 +176,7 @@ class AcpAsyncClientTest {
 
 	@Test
 	void testSetSessionMode() {
-		var transport = createMockTransportWithSetMode();
+		MockAcpClientTransport transport = createMockTransportWithSetMode();
 
 		AcpAsyncClient client = AcpClient.async(transport).requestTimeout(TIMEOUT).build();
 
@@ -190,7 +191,7 @@ class AcpAsyncClientTest {
 
 	@Test
 	void testSetSessionModeWithNullRequest() {
-		var transport = new MockAcpClientTransport();
+		MockAcpClientTransport transport = new MockAcpClientTransport();
 		AcpAsyncClient client = AcpClient.async(transport).requestTimeout(TIMEOUT).build();
 
 		assertThatThrownBy(() -> client.setSessionMode(null)).isInstanceOf(IllegalArgumentException.class)
@@ -201,12 +202,12 @@ class AcpAsyncClientTest {
 
 	@Test
 	void testPrompt() {
-		var transport = createMockTransportWithPrompt();
+		MockAcpClientTransport transport = createMockTransportWithPrompt();
 
 		AcpAsyncClient client = AcpClient.async(transport).requestTimeout(TIMEOUT).build();
 
 		AcpSchema.PromptRequest promptRequest = new AcpSchema.PromptRequest("session-123",
-				List.of(new AcpSchema.TextContent("Fix the bug")));
+				java.util.Arrays.asList(new AcpSchema.TextContent("Fix the bug")));
 
 		StepVerifier.create(client.prompt(promptRequest)).consumeNextWith(response -> {
 			assertThat(response).isNotNull();
@@ -218,7 +219,7 @@ class AcpAsyncClientTest {
 
 	@Test
 	void testPromptWithNullRequest() {
-		var transport = new MockAcpClientTransport();
+		MockAcpClientTransport transport = new MockAcpClientTransport();
 		AcpAsyncClient client = AcpClient.async(transport).requestTimeout(TIMEOUT).build();
 
 		assertThatThrownBy(() -> client.prompt(null)).isInstanceOf(IllegalArgumentException.class)
@@ -229,7 +230,7 @@ class AcpAsyncClientTest {
 
 	@Test
 	void testCancel() {
-		var transport = new MockAcpClientTransport();
+		MockAcpClientTransport transport = new MockAcpClientTransport();
 		AcpAsyncClient client = AcpClient.async(transport).requestTimeout(TIMEOUT).build();
 
 		AcpSchema.CancelNotification cancelNotification = new AcpSchema.CancelNotification("session-123");
@@ -246,7 +247,7 @@ class AcpAsyncClientTest {
 
 	@Test
 	void testCancelWithNullNotification() {
-		var transport = new MockAcpClientTransport();
+		MockAcpClientTransport transport = new MockAcpClientTransport();
 		AcpAsyncClient client = AcpClient.async(transport).requestTimeout(TIMEOUT).build();
 
 		assertThatThrownBy(() -> client.cancel(null)).isInstanceOf(IllegalArgumentException.class)
@@ -259,7 +260,7 @@ class AcpAsyncClientTest {
 	void testSessionUpdateNotificationHandling() {
 		Sinks.One<AcpSchema.SessionNotification> receivedNotification = Sinks.one();
 
-		var transport = new MockAcpClientTransport();
+		MockAcpClientTransport transport = new MockAcpClientTransport();
 		AcpAsyncClient client = AcpClient.async(transport)
 			.requestTimeout(TIMEOUT)
 			.sessionUpdateConsumer(notification -> {
@@ -286,7 +287,7 @@ class AcpAsyncClientTest {
 
 	@Test
 	void testGracefulShutdown() {
-		var transport = new MockAcpClientTransport();
+		MockAcpClientTransport transport = new MockAcpClientTransport();
 		AcpAsyncClient client = AcpClient.async(transport).requestTimeout(TIMEOUT).build();
 
 		StepVerifier.create(client.closeGracefully()).verifyComplete();
@@ -296,8 +297,9 @@ class AcpAsyncClientTest {
 
 	private MockAcpClientTransport createMockTransportWithInitialize() {
 		return new MockAcpClientTransport((t, msg) -> {
-			if (msg instanceof AcpSchema.JSONRPCRequest request
-					&& AcpSchema.METHOD_INITIALIZE.equals(request.method())) {
+			if (msg instanceof AcpSchema.JSONRPCRequest
+					&& AcpSchema.METHOD_INITIALIZE.equals(((AcpSchema.JSONRPCRequest) msg).method())) {
+				AcpSchema.JSONRPCRequest request = (AcpSchema.JSONRPCRequest) msg;
 				t.simulateIncomingMessage(
 						new AcpSchema.JSONRPCResponse(AcpSchema.JSONRPC_VERSION, request.id(), MOCK_INIT_RESPONSE, null));
 			}
@@ -306,7 +308,8 @@ class AcpAsyncClientTest {
 
 	private MockAcpClientTransport createMockTransportWithAuthMethods() {
 		return new MockAcpClientTransport((t, msg) -> {
-			if (msg instanceof AcpSchema.JSONRPCRequest request) {
+			if (msg instanceof AcpSchema.JSONRPCRequest) {
+				AcpSchema.JSONRPCRequest request = (AcpSchema.JSONRPCRequest) msg;
 				if (AcpSchema.METHOD_AUTHENTICATE.equals(request.method())) {
 					AcpSchema.AuthenticateResponse authResponse = new AcpSchema.AuthenticateResponse();
 					t.simulateIncomingMessage(
@@ -318,7 +321,8 @@ class AcpAsyncClientTest {
 
 	private MockAcpClientTransport createMockTransportWithSession() {
 		return new MockAcpClientTransport((t, msg) -> {
-			if (msg instanceof AcpSchema.JSONRPCRequest request) {
+			if (msg instanceof AcpSchema.JSONRPCRequest) {
+				AcpSchema.JSONRPCRequest request = (AcpSchema.JSONRPCRequest) msg;
 				if (AcpSchema.METHOD_SESSION_NEW.equals(request.method())) {
 					AcpSchema.NewSessionResponse sessionResponse = new AcpSchema.NewSessionResponse("session-abc123", null,
 							null);
@@ -331,7 +335,8 @@ class AcpAsyncClientTest {
 
 	private MockAcpClientTransport createMockTransportWithLoadSession() {
 		return new MockAcpClientTransport((t, msg) -> {
-			if (msg instanceof AcpSchema.JSONRPCRequest request) {
+			if (msg instanceof AcpSchema.JSONRPCRequest) {
+				AcpSchema.JSONRPCRequest request = (AcpSchema.JSONRPCRequest) msg;
 				if (AcpSchema.METHOD_SESSION_LOAD.equals(request.method())) {
 					AcpSchema.LoadSessionResponse loadResponse = new AcpSchema.LoadSessionResponse(null, null);
 					t.simulateIncomingMessage(
@@ -343,7 +348,8 @@ class AcpAsyncClientTest {
 
 	private MockAcpClientTransport createMockTransportWithSetMode() {
 		return new MockAcpClientTransport((t, msg) -> {
-			if (msg instanceof AcpSchema.JSONRPCRequest request) {
+			if (msg instanceof AcpSchema.JSONRPCRequest) {
+				AcpSchema.JSONRPCRequest request = (AcpSchema.JSONRPCRequest) msg;
 				if (AcpSchema.METHOD_SESSION_SET_MODE.equals(request.method())) {
 					AcpSchema.SetSessionModeResponse modeResponse = new AcpSchema.SetSessionModeResponse();
 					t.simulateIncomingMessage(
@@ -355,7 +361,8 @@ class AcpAsyncClientTest {
 
 	private MockAcpClientTransport createMockTransportWithPrompt() {
 		return new MockAcpClientTransport((t, msg) -> {
-			if (msg instanceof AcpSchema.JSONRPCRequest request) {
+			if (msg instanceof AcpSchema.JSONRPCRequest) {
+				AcpSchema.JSONRPCRequest request = (AcpSchema.JSONRPCRequest) msg;
 				if (AcpSchema.METHOD_SESSION_PROMPT.equals(request.method())) {
 					AcpSchema.PromptResponse promptResponse = new AcpSchema.PromptResponse(AcpSchema.StopReason.END_TURN);
 					t.simulateIncomingMessage(

@@ -5,6 +5,7 @@
 package com.agentclientprotocol.sdk.agent.support.handler;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.agentclientprotocol.sdk.agent.support.AcpInvocationContext;
@@ -49,7 +50,7 @@ public class ReturnValueHandlerComposite implements ReturnValueHandler {
 	 * @return unmodifiable list of handlers
 	 */
 	public List<ReturnValueHandler> getHandlers() {
-		return List.copyOf(handlers);
+		return Collections.unmodifiableList(new ArrayList<ReturnValueHandler>(handlers));
 	}
 
 	@Override

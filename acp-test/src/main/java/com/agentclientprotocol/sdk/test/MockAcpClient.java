@@ -4,7 +4,10 @@
 
 package com.agentclientprotocol.sdk.test;
 
+import java.lang.reflect.Field;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -15,7 +18,6 @@ import com.agentclientprotocol.sdk.client.AcpAsyncClient;
 import com.agentclientprotocol.sdk.client.AcpClient;
 import com.agentclientprotocol.sdk.spec.AcpClientTransport;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
-import io.modelcontextprotocol.json.TypeRef;
 import reactor.core.publisher.Mono;
 
 /**
@@ -114,7 +116,7 @@ public class MockAcpClient {
 	 * @return The new session response
 	 */
 	public AcpSchema.NewSessionResponse newSession(String cwd) {
-		AcpSchema.NewSessionResponse response = delegate.newSession(new AcpSchema.NewSessionRequest(cwd, List.of()))
+		AcpSchema.NewSessionResponse response = delegate.newSession(new AcpSchema.NewSessionRequest(cwd, Collections.<AcpSchema.McpServer>emptyList()))
 			.block(timeout);
 		if (response != null) {
 			this.currentSessionId = response.sessionId();
@@ -132,7 +134,7 @@ public class MockAcpClient {
 			throw new IllegalStateException("No session created. Call newSession() first.");
 		}
 		return delegate
-			.prompt(new AcpSchema.PromptRequest(currentSessionId, List.of(new AcpSchema.TextContent(text))))
+			.prompt(new AcpSchema.PromptRequest(currentSessionId, Collections.<AcpSchema.ContentBlock>singletonList(new AcpSchema.TextContent(text))))
 			.block(timeout);
 	}
 
@@ -143,7 +145,7 @@ public class MockAcpClient {
 	 * @return The prompt response
 	 */
 	public AcpSchema.PromptResponse prompt(String sessionId, String text) {
-		return delegate.prompt(new AcpSchema.PromptRequest(sessionId, List.of(new AcpSchema.TextContent(text))))
+		return delegate.prompt(new AcpSchema.PromptRequest(sessionId, Collections.<AcpSchema.ContentBlock>singletonList(new AcpSchema.TextContent(text))))
 			.block(timeout);
 	}
 
@@ -180,7 +182,7 @@ public class MockAcpClient {
 	 * @return The list of updates
 	 */
 	public List<AcpSchema.SessionNotification> getReceivedUpdates() {
-		return List.copyOf(receivedUpdates);
+		return Collections.unmodifiableList(new ArrayList<AcpSchema.SessionNotification>(receivedUpdates));
 	}
 
 	/**
@@ -188,7 +190,7 @@ public class MockAcpClient {
 	 * @return The list of permission requests
 	 */
 	public List<AcpSchema.RequestPermissionRequest> getReceivedPermissionRequests() {
-		return List.copyOf(receivedPermissionRequests);
+		return Collections.unmodifiableList(new ArrayList<AcpSchema.RequestPermissionRequest>(receivedPermissionRequests));
 	}
 
 	/**
@@ -196,7 +198,7 @@ public class MockAcpClient {
 	 * @return The list of file read requests
 	 */
 	public List<AcpSchema.ReadTextFileRequest> getReceivedFileReadRequests() {
-		return List.copyOf(receivedFileReadRequests);
+		return Collections.unmodifiableList(new ArrayList<AcpSchema.ReadTextFileRequest>(receivedFileReadRequests));
 	}
 
 	/**
@@ -204,7 +206,7 @@ public class MockAcpClient {
 	 * @return The list of file write requests
 	 */
 	public List<AcpSchema.WriteTextFileRequest> getReceivedFileWriteRequests() {
-		return List.copyOf(receivedFileWriteRequests);
+		return Collections.unmodifiableList(new ArrayList<AcpSchema.WriteTextFileRequest>(receivedFileWriteRequests));
 	}
 
 	/**
@@ -353,7 +355,7 @@ public class MockAcpClient {
 
 			// Replace the delegate using reflection
 			try {
-				var field = MockAcpClient.class.getDeclaredField("delegate");
+				Field field = MockAcpClient.class.getDeclaredField("delegate");
 				field.setAccessible(true);
 				field.set(mockClient, delegate);
 			}

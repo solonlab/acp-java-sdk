@@ -16,7 +16,7 @@ import com.agentclientprotocol.sdk.client.AcpAsyncClient;
 import com.agentclientprotocol.sdk.client.AcpClient;
 import com.agentclientprotocol.sdk.client.transport.WebSocketAcpClientTransport;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
-import io.modelcontextprotocol.json.McpJsonMapper;
+import com.agentclientprotocol.sdk.json.McpJsonMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -84,7 +84,7 @@ class WebSocketClientAgentTest {
 		agentTransport = new WebSocketAcpAgentTransport(TEST_PORT, jsonMapper);
 		agent = AcpAgent.async(agentTransport)
 			.initializeHandler(request -> Mono.just(new AcpSchema.InitializeResponse(
-				1, new AcpSchema.AgentCapabilities(), List.of())))
+				1, new AcpSchema.AgentCapabilities(), java.util.Collections.emptyList())))
 			.newSessionHandler(request -> Mono.just(new AcpSchema.NewSessionResponse("test-session", null, null)))
 			.promptHandler((request, updater) -> Mono.just(new AcpSchema.PromptResponse(AcpSchema.StopReason.END_TURN)))
 			.build();
@@ -112,7 +112,7 @@ class WebSocketClientAgentTest {
 		agentTransport = new WebSocketAcpAgentTransport(TEST_PORT + 1, jsonMapper);
 		agent = AcpAgent.async(agentTransport)
 			.initializeHandler(request -> Mono.just(new AcpSchema.InitializeResponse(
-				1, new AcpSchema.AgentCapabilities(), List.of())))
+				1, new AcpSchema.AgentCapabilities(), java.util.Collections.emptyList())))
 			.newSessionHandler(request -> {
 				assertThat(request.cwd()).isEqualTo("/workspace");
 				return Mono.just(new AcpSchema.NewSessionResponse("ws-session-123", null, null));
@@ -132,7 +132,7 @@ class WebSocketClientAgentTest {
 		client.initialize(new AcpSchema.InitializeRequest(1, new AcpSchema.ClientCapabilities())).block(TIMEOUT);
 
 		AcpSchema.NewSessionResponse session = client
-			.newSession(new AcpSchema.NewSessionRequest("/workspace", List.of()))
+			.newSession(new AcpSchema.NewSessionRequest("/workspace", java.util.Collections.emptyList()))
 			.block(TIMEOUT);
 
 		assertThat(session).isNotNull();
@@ -145,7 +145,7 @@ class WebSocketClientAgentTest {
 		agentTransport = new WebSocketAcpAgentTransport(TEST_PORT + 2, jsonMapper);
 		agent = AcpAgent.async(agentTransport)
 			.initializeHandler(request -> Mono.just(new AcpSchema.InitializeResponse(
-				1, new AcpSchema.AgentCapabilities(), List.of())))
+				1, new AcpSchema.AgentCapabilities(), java.util.Collections.emptyList())))
 			.newSessionHandler(request -> Mono.just(new AcpSchema.NewSessionResponse("prompt-session", null, null)))
 			.promptHandler((request, updater) -> {
 				// Verify we received the prompt
@@ -166,11 +166,11 @@ class WebSocketClientAgentTest {
 
 		// Full flow
 		client.initialize(new AcpSchema.InitializeRequest(1, new AcpSchema.ClientCapabilities())).block(TIMEOUT);
-		client.newSession(new AcpSchema.NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
+		client.newSession(new AcpSchema.NewSessionRequest("/workspace", java.util.Collections.emptyList())).block(TIMEOUT);
 
 		AcpSchema.PromptResponse response = client
 			.prompt(new AcpSchema.PromptRequest("prompt-session",
-				List.of(new AcpSchema.TextContent("Hello from WebSocket!"))))
+				java.util.Collections.<AcpSchema.ContentBlock>singletonList(new AcpSchema.TextContent("Hello from WebSocket!"))))
 			.block(TIMEOUT);
 
 		assertThat(response).isNotNull();
@@ -183,7 +183,7 @@ class WebSocketClientAgentTest {
 		agentTransport = new WebSocketAcpAgentTransport(TEST_PORT + 3, jsonMapper);
 		agent = AcpAgent.async(agentTransport)
 			.initializeHandler(request -> Mono.just(new AcpSchema.InitializeResponse(
-				1, new AcpSchema.AgentCapabilities(), List.of())))
+				1, new AcpSchema.AgentCapabilities(), java.util.Collections.emptyList())))
 			.newSessionHandler(request -> Mono.just(new AcpSchema.NewSessionResponse("stream-session", null, null)))
 			.promptHandler((request, updater) -> {
 				// Send streaming updates before response
@@ -214,9 +214,9 @@ class WebSocketClientAgentTest {
 
 		// Full flow
 		client.initialize(new AcpSchema.InitializeRequest(1, new AcpSchema.ClientCapabilities())).block(TIMEOUT);
-		client.newSession(new AcpSchema.NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
+		client.newSession(new AcpSchema.NewSessionRequest("/workspace", java.util.Collections.emptyList())).block(TIMEOUT);
 		client.prompt(new AcpSchema.PromptRequest("stream-session",
-			List.of(new AcpSchema.TextContent("Trigger updates")))).block(TIMEOUT);
+			java.util.Collections.<AcpSchema.ContentBlock>singletonList(new AcpSchema.TextContent("Trigger updates")))).block(TIMEOUT);
 
 		// Verify we received at least one update
 		assertThat(receivedUpdate.get()).isNotNull();
@@ -230,7 +230,7 @@ class WebSocketClientAgentTest {
 		agentTransport = new WebSocketAcpAgentTransport(TEST_PORT + 4, jsonMapper);
 		agent = AcpAgent.async(agentTransport)
 			.initializeHandler(request -> Mono.just(new AcpSchema.InitializeResponse(
-				1, new AcpSchema.AgentCapabilities(), List.of())))
+				1, new AcpSchema.AgentCapabilities(), java.util.Collections.emptyList())))
 			.newSessionHandler(request -> Mono.just(new AcpSchema.NewSessionResponse("file-session", null, null)))
 			.promptHandler((request, updater) -> {
 				// Request file from client
@@ -261,11 +261,11 @@ class WebSocketClientAgentTest {
 		AcpSchema.FileSystemCapability fsCaps = new AcpSchema.FileSystemCapability(true, false);
 		AcpSchema.ClientCapabilities caps = new AcpSchema.ClientCapabilities(fsCaps, false);
 		client.initialize(new AcpSchema.InitializeRequest(1, caps)).block(TIMEOUT);
-		client.newSession(new AcpSchema.NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
+		client.newSession(new AcpSchema.NewSessionRequest("/workspace", java.util.Collections.emptyList())).block(TIMEOUT);
 
 		AcpSchema.PromptResponse response = client
 			.prompt(new AcpSchema.PromptRequest("file-session",
-				List.of(new AcpSchema.TextContent("Read a file"))))
+				java.util.Collections.<AcpSchema.ContentBlock>singletonList(new AcpSchema.TextContent("Read a file"))))
 			.block(TIMEOUT);
 
 		assertThat(response).isNotNull();

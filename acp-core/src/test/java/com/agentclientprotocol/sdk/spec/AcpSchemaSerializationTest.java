@@ -10,11 +10,12 @@ import java.util.List;
 import java.util.Map;
 
 import com.agentclientprotocol.sdk.AcpTestFixtures;
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.json.TypeRef;
+import com.agentclientprotocol.sdk.json.McpJsonMapper;
+import com.agentclientprotocol.sdk.json.TypeRef;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import com.agentclientprotocol.sdk.TestUtil;
 
 /**
  * Tests JSON serialization and deserialization of ACP schema types.
@@ -290,7 +291,7 @@ class AcpSchemaSerializationTest {
 
 	@Test
 	void initializeRequestWithMetaSerialization() throws IOException {
-		Map<String, Object> meta = Map.of("zed.dev/debugMode", true, "custom/version", "1.0.0");
+		Map<String, Object> meta = TestUtil.mapOf("zed.dev/debugMode", true, "custom/version", "1.0.0");
 		AcpSchema.InitializeRequest request = new AcpSchema.InitializeRequest(1,
 				new AcpSchema.ClientCapabilities(new AcpSchema.FileSystemCapability(true, true), true), meta);
 
@@ -323,9 +324,9 @@ class AcpSchemaSerializationTest {
 
 	@Test
 	void promptRequestWithMetaSerialization() throws IOException {
-		Map<String, Object> meta = Map.of("zed.dev/debugMode", true);
+		Map<String, Object> meta = TestUtil.mapOf("zed.dev/debugMode", true);
 		AcpSchema.PromptRequest request = new AcpSchema.PromptRequest("sess_123",
-				List.of(new AcpSchema.TextContent("Hello")), meta);
+				java.util.Arrays.asList(new AcpSchema.TextContent("Hello")), meta);
 
 		String json = jsonMapper.writeValueAsString(request);
 		assertThat(json).contains("\"_meta\"");
@@ -340,8 +341,8 @@ class AcpSchemaSerializationTest {
 	@Test
 	void agentCapabilitiesWithMetaSerialization() throws IOException {
 		// Nested _meta object as shown in spec for advertising custom capabilities
-		Map<String, Object> zedCapabilities = Map.of("workspace", true, "fileNotifications", true);
-		Map<String, Object> meta = Map.of("zed.dev", zedCapabilities);
+		Map<String, Object> zedCapabilities = TestUtil.mapOf("workspace", true, "fileNotifications", true);
+		Map<String, Object> meta = TestUtil.mapOf("zed.dev", zedCapabilities);
 		AcpSchema.AgentCapabilities caps = new AcpSchema.AgentCapabilities(true, new AcpSchema.McpCapabilities(true, false),
 				new AcpSchema.PromptCapabilities(false, true, true), meta);
 
@@ -362,7 +363,7 @@ class AcpSchemaSerializationTest {
 
 	@Test
 	void sessionUpdateWithMetaSerialization() throws IOException {
-		Map<String, Object> meta = Map.of("custom/field", "value");
+		Map<String, Object> meta = TestUtil.mapOf("custom/field", "value");
 		AcpSchema.AgentMessageChunk update = new AcpSchema.AgentMessageChunk("agent_message_chunk",
 				new AcpSchema.TextContent("Hello"), meta);
 
@@ -380,8 +381,14 @@ class AcpSchemaSerializationTest {
 	@Test
 	void metaFieldRoundTripFromGoldenFile() throws IOException {
 		// Read golden file and verify round-trip
-		String goldenJson = new String(
-				getClass().getResourceAsStream("/golden/initialize-request-with-meta.json").readAllBytes());
+		java.io.InputStream is = getClass().getResourceAsStream("/golden/initialize-request-with-meta.json");
+		byte[] buf = new byte[4096];
+		java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+		int len;
+		while ((len = is.read(buf)) != -1) {
+			baos.write(buf, 0, len);
+		}
+		String goldenJson = new String(baos.toByteArray());
 
 		AcpSchema.InitializeRequest deserialized = jsonMapper.readValue(goldenJson,
 				new TypeRef<AcpSchema.InitializeRequest>() {

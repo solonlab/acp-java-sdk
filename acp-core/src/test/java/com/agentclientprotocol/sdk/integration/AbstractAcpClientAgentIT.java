@@ -5,6 +5,7 @@
 package com.agentclientprotocol.sdk.integration;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -78,7 +79,7 @@ public abstract class AbstractAcpClientAgentIT {
 				.initializeHandler(request -> {
 					assertThat(request.protocolVersion()).isEqualTo(1);
 					return Mono.just(new AcpSchema.InitializeResponse(1,
-							new AcpSchema.AgentCapabilities(true, null, null), List.of())); // loadSession=true
+							new AcpSchema.AgentCapabilities(true, null, null), Collections.emptyList())); // loadSession=true
 				})
 				.build();
 
@@ -118,7 +119,7 @@ public abstract class AbstractAcpClientAgentIT {
 			AcpAsyncAgent agent = AcpAgent.async(agentTransport)
 				.requestTimeout(TIMEOUT)
 				.initializeHandler(request -> Mono
-					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of())))
+					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList())))
 				.newSessionHandler(request -> {
 					assertThat(request.cwd()).isEqualTo("/test/workspace");
 					return Mono.just(new AcpSchema.NewSessionResponse("session-123", null, null));
@@ -135,7 +136,7 @@ public abstract class AbstractAcpClientAgentIT {
 
 			// Create session
 			AcpSchema.NewSessionResponse sessionResponse = client
-				.newSession(new AcpSchema.NewSessionRequest("/test/workspace", List.of()))
+				.newSession(new AcpSchema.NewSessionRequest("/test/workspace", Collections.emptyList()))
 				.block(TIMEOUT);
 
 			assertThat(sessionResponse).isNotNull();
@@ -162,7 +163,7 @@ public abstract class AbstractAcpClientAgentIT {
 			AcpAsyncAgent agent = AcpAgent.async(agentTransport)
 				.requestTimeout(TIMEOUT)
 				.initializeHandler(request -> Mono
-					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of())))
+					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList())))
 				.newSessionHandler(
 						request -> Mono.just(new AcpSchema.NewSessionResponse("session-prompt-test", null, null)))
 				.promptHandler((request, updater) -> {
@@ -178,11 +179,11 @@ public abstract class AbstractAcpClientAgentIT {
 			agent.start().subscribe();
 			Thread.sleep(100);
 			client.initialize(new AcpSchema.InitializeRequest(1, new AcpSchema.ClientCapabilities())).block(TIMEOUT);
-			client.newSession(new AcpSchema.NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
+			client.newSession(new AcpSchema.NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
 
 			// Send prompt
 			AcpSchema.PromptResponse promptResponse = client.prompt(new AcpSchema.PromptRequest("session-prompt-test",
-					List.of(new AcpSchema.TextContent("Fix the failing tests"))))
+					java.util.Arrays.asList(new AcpSchema.TextContent("Fix the failing tests"))))
 				.block(TIMEOUT);
 
 			assertThat(promptResponse).isNotNull();
@@ -211,7 +212,7 @@ public abstract class AbstractAcpClientAgentIT {
 			AcpAsyncAgent agent = AcpAgent.async(agentTransport)
 				.requestTimeout(TIMEOUT)
 				.initializeHandler(request -> Mono.just(
-						new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(true, null, null), List.of())))
+						new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(true, null, null), Collections.emptyList())))
 				.newSessionHandler(
 						request -> Mono.just(new AcpSchema.NewSessionResponse("session-updates", null, null)))
 				.promptHandler((request, updater) -> {
@@ -241,10 +242,10 @@ public abstract class AbstractAcpClientAgentIT {
 			agent.start().subscribe();
 			Thread.sleep(100);
 			client.initialize(new AcpSchema.InitializeRequest(1, new AcpSchema.ClientCapabilities())).block(TIMEOUT);
-			client.newSession(new AcpSchema.NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
+			client.newSession(new AcpSchema.NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
 
 			// Send prompt and verify updates are received
-			client.prompt(new AcpSchema.PromptRequest("session-updates", List.of(new AcpSchema.TextContent("Test"))))
+			client.prompt(new AcpSchema.PromptRequest("session-updates", java.util.Arrays.asList(new AcpSchema.TextContent("Test"))))
 				.block(TIMEOUT);
 
 			assertThat(updateLatch.await(5, TimeUnit.SECONDS)).isTrue();
@@ -275,14 +276,14 @@ public abstract class AbstractAcpClientAgentIT {
 			AcpAsyncAgent agent = AcpAgent.async(agentTransport)
 				.requestTimeout(TIMEOUT)
 				.initializeHandler(request -> Mono
-					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of())))
+					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList())))
 				.newSessionHandler(
 						request -> Mono.just(new AcpSchema.NewSessionResponse("session-permission", null, null)))
 				.promptHandler((request, updater) -> {
 					// Request permission from client
 					AcpSchema.ToolCallUpdate toolCall = new AcpSchema.ToolCallUpdate("tool-123", "Write File",
 							AcpSchema.ToolKind.EDIT, AcpSchema.ToolCallStatus.PENDING, null, null, null, null);
-					List<AcpSchema.PermissionOption> options = List.of(
+					List<AcpSchema.PermissionOption> options = java.util.Arrays.asList(
 							new AcpSchema.PermissionOption("allow", "Allow", AcpSchema.PermissionOptionKind.ALLOW_ONCE),
 							new AcpSchema.PermissionOption("deny", "Deny", AcpSchema.PermissionOptionKind.REJECT_ONCE));
 
@@ -311,11 +312,11 @@ public abstract class AbstractAcpClientAgentIT {
 			agent.start().subscribe();
 			Thread.sleep(100);
 			client.initialize(new AcpSchema.InitializeRequest(1, new AcpSchema.ClientCapabilities())).block(TIMEOUT);
-			client.newSession(new AcpSchema.NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
+			client.newSession(new AcpSchema.NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
 
 			// Send prompt which triggers permission request
 			client.prompt(
-					new AcpSchema.PromptRequest("session-permission", List.of(new AcpSchema.TextContent("Test"))))
+					new AcpSchema.PromptRequest("session-permission", java.util.Arrays.asList(new AcpSchema.TextContent("Test"))))
 				.block(TIMEOUT);
 
 			assertThat(permissionLatch.await(5, TimeUnit.SECONDS)).isTrue();
@@ -347,7 +348,7 @@ public abstract class AbstractAcpClientAgentIT {
 			AcpAsyncAgent agent = AcpAgent.async(agentTransport)
 				.requestTimeout(TIMEOUT)
 				.initializeHandler(request -> Mono
-					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of())))
+					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList())))
 				.newSessionHandler(
 						request -> Mono.just(new AcpSchema.NewSessionResponse("session-file-read", null, null)))
 				.promptHandler((request, updater) -> {
@@ -380,11 +381,11 @@ public abstract class AbstractAcpClientAgentIT {
 			agent.start().subscribe();
 			Thread.sleep(100);
 			client.initialize(new AcpSchema.InitializeRequest(1, clientCaps)).block(TIMEOUT);
-			client.newSession(new AcpSchema.NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
+			client.newSession(new AcpSchema.NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
 
 			// Send prompt which triggers file read
 			client
-				.prompt(new AcpSchema.PromptRequest("session-file-read", List.of(new AcpSchema.TextContent("Test"))))
+				.prompt(new AcpSchema.PromptRequest("session-file-read", java.util.Arrays.asList(new AcpSchema.TextContent("Test"))))
 				.block(TIMEOUT);
 
 			assertThat(fileLatch.await(5, TimeUnit.SECONDS)).isTrue();
@@ -409,7 +410,7 @@ public abstract class AbstractAcpClientAgentIT {
 			AcpAsyncAgent agent = AcpAgent.async(agentTransport)
 				.requestTimeout(TIMEOUT)
 				.initializeHandler(request -> Mono
-					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of())))
+					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList())))
 				.build();
 
 			// Build client
@@ -442,7 +443,7 @@ public abstract class AbstractAcpClientAgentIT {
 			AcpAsyncAgent agent = AcpAgent.async(agentTransport)
 				.requestTimeout(TIMEOUT)
 				.initializeHandler(request -> Mono
-					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), List.of())))
+					.just(new AcpSchema.InitializeResponse(1, new AcpSchema.AgentCapabilities(), Collections.emptyList())))
 				.newSessionHandler(
 						request -> Mono.just(new AcpSchema.NewSessionResponse("session-cancel-test", null, null)))
 				.cancelHandler(notification -> {
@@ -459,7 +460,7 @@ public abstract class AbstractAcpClientAgentIT {
 			agent.start().subscribe();
 			Thread.sleep(100);
 			client.initialize(new AcpSchema.InitializeRequest(1, new AcpSchema.ClientCapabilities())).block(TIMEOUT);
-			client.newSession(new AcpSchema.NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
+			client.newSession(new AcpSchema.NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
 
 			// Send cancel notification
 			client.cancel(new AcpSchema.CancelNotification("session-cancel-test")).block(TIMEOUT);

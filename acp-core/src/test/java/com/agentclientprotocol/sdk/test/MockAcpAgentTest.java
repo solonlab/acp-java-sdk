@@ -5,6 +5,7 @@
 package com.agentclientprotocol.sdk.test;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 
 import com.agentclientprotocol.sdk.client.AcpAsyncClient;
@@ -61,11 +62,11 @@ class MockAcpAgentTest {
 
 			AcpAsyncClient client = AcpClient.async(pair.clientTransport()).build();
 			client.initialize(new AcpSchema.InitializeRequest(1, new AcpSchema.ClientCapabilities())).block(TIMEOUT);
-			client.newSession(new AcpSchema.NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
+			client.newSession(new AcpSchema.NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
 
 			mockAgent.expectPrompts(1);
 			client
-				.prompt(new AcpSchema.PromptRequest("test-session", List.of(new AcpSchema.TextContent("Hello agent"))))
+				.prompt(new AcpSchema.PromptRequest("test-session", java.util.Arrays.asList(new AcpSchema.TextContent("Hello agent"))))
 				.block(TIMEOUT);
 
 			assertThat(mockAgent.awaitPrompts(TIMEOUT)).isTrue();
@@ -94,7 +95,7 @@ class MockAcpAgentTest {
 
 			AcpAsyncClient client = AcpClient.async(pair.clientTransport()).build();
 			client.initialize(new AcpSchema.InitializeRequest(1, new AcpSchema.ClientCapabilities())).block(TIMEOUT);
-			client.newSession(new AcpSchema.NewSessionRequest("/workspace", List.of())).block(TIMEOUT);
+			client.newSession(new AcpSchema.NewSessionRequest("/workspace", Collections.emptyList())).block(TIMEOUT);
 
 			client.cancel(new AcpSchema.CancelNotification("cancel-session")).block(TIMEOUT);
 			Thread.sleep(100); // Give time for notification to arrive
