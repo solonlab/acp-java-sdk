@@ -67,3 +67,5 @@ replay_pid*
 ### Planning and Internal Documentation ###
 plans/
 learnings/
+
+.soloncode/
