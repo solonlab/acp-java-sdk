@@ -10,24 +10,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import com.agentclientprotocol.sdk.json.McpJsonMapper;
-import com.agentclientprotocol.sdk.json.TypeRef;
 import com.agentclientprotocol.sdk.spec.AcpAgentTransport;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.agentclientprotocol.sdk.spec.AcpSchema.JSONRPCMessage;
 import com.agentclientprotocol.sdk.util.Assert;
+import io.modelcontextprotocol.json.McpJsonMapper;
+import io.modelcontextprotocol.json.TypeRef;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.server.WebSocketHandler;
-import org.eclipse.jetty.websocket.server.NativeWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
+import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
@@ -60,8 +58,8 @@ import reactor.core.scheduler.Schedulers;
  * <pre>{@code
  * <dependency>
  *     <groupId>org.eclipse.jetty.websocket</groupId>
- *     <artifactId>websocket-server</artifactId>
- *     <version>9.4.56.v20240826</version>
+ *     <artifactId>jetty-websocket-jetty-server</artifactId>
+ *     <version>12.0.14</version>
  * </dependency>
  * }</pre>
  *
@@ -96,16 +94,11 @@ public class WebSocketAcpAgentTransport implements AcpAgentTransport {
 
 	private final AtomicBoolean isStarted = new AtomicBoolean(false);
 
-	private Consumer<Throwable> exceptionHandler = new Consumer<Throwable>() {
-		@Override
-		public void accept(Throwable t) {
-			logger.error("Transport error", t);
-		}
-	};
+	private Consumer<Throwable> exceptionHandler = t -> logger.error("Transport error", t);
 
 	private volatile Session clientSession;
 
-	private long idleTimeoutMs = Duration.ofMinutes(30).toMillis();
+	private Duration idleTimeout = Duration.ofMinutes(30);
 
 	/**
 	 * Creates a new WebSocketAcpAgentTransport on the specified port with default path.
@@ -135,13 +128,10 @@ public class WebSocketAcpAgentTransport implements AcpAgentTransport {
 		this.outboundSink = Sinks.many().unicast().onBackpressureBuffer();
 		// Use daemon thread so JVM can exit if closeGracefully() isn't called
 		this.outboundScheduler = Schedulers.fromExecutorService(
-			Executors.newSingleThreadExecutor(new java.util.concurrent.ThreadFactory() {
-				@Override
-				public Thread newThread(Runnable r) {
-					Thread t = new Thread(r, "acp-ws-agent-outbound");
-					t.setDaemon(true);
-					return t;
-				}
+			Executors.newSingleThreadExecutor(r -> {
+				Thread t = new Thread(r, "acp-ws-agent-outbound");
+				t.setDaemon(true);
+				return t;
 			}), "ws-agent-outbound");
 	}
 
@@ -151,7 +141,7 @@ public class WebSocketAcpAgentTransport implements AcpAgentTransport {
 	 * @return This transport for chaining
 	 */
 	public WebSocketAcpAgentTransport idleTimeout(Duration timeout) {
-		this.idleTimeoutMs = timeout.toMillis();
+		this.idleTimeout = timeout;
 		return this;
 	}
 
@@ -169,63 +159,44 @@ public class WebSocketAcpAgentTransport implements AcpAgentTransport {
 			return Mono.error(new IllegalStateException("Already started"));
 		}
 
-		return Mono.fromCallable(new java.util.concurrent.Callable<Void>() {
-			@Override
-			public Void call() throws Exception {
-				logger.info("Starting WebSocket agent server on port {} at path {}", port, path);
+		return Mono.fromCallable(() -> {
+			logger.info("Starting WebSocket agent server on port {} at path {}", port, path);
 
-				// Set up inbound message handling
-				handleIncomingMessages(handler);
+			// Set up inbound message handling
+			handleIncomingMessages(handler);
 
-				// Create and configure Jetty server
-				server = new Server();
-				ServerConnector connector = new ServerConnector(server);
-				connector.setPort(port);
-				server.addConnector(connector);
+			// Create and configure Jetty server
+			server = new Server();
+			ServerConnector connector = new ServerConnector(server);
+			connector.setPort(port);
+			server.addConnector(connector);
 
-				// Set up WebSocket handler using Jetty 9.4 API
-				WebSocketHandler wsHandler = new WebSocketHandler() {
-					@Override
-					public void configure(org.eclipse.jetty.websocket.servlet.WebSocketServletFactory factory) {
-						factory.getPolicy().setIdleTimeout(idleTimeoutMs);
-						factory.register(AcpWebSocketEndpoint.class);
-					}
-				};
-				// Override the context path
-				wsHandler.setServer(server);
-				server.setHandler(wsHandler);
+			// Set up WebSocket handler
+			WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, container -> {
+				container.setIdleTimeout(idleTimeout);
+				container.addMapping(path, (request, response, callback) -> new AcpWebSocketEndpoint());
+			});
+			server.setHandler(wsHandler);
 
-				// Start server
-				server.start();
-				startOutboundProcessing();
+			// Start server
+			server.start();
+			startOutboundProcessing();
 
-				logger.info("WebSocket agent server started on port {} at path {}", port, path);
-				return null;
-			}
+			logger.info("WebSocket agent server started on port {} at path {}", port, path);
+			return null;
 		}).then();
 	}
 
 	private void handleIncomingMessages(Function<Mono<JSONRPCMessage>, Mono<JSONRPCMessage>> handler) {
 		this.inboundSink.asFlux()
-			.flatMap(new Function<JSONRPCMessage, org.reactivestreams.Publisher<JSONRPCMessage>>() {
-				@Override
-				public org.reactivestreams.Publisher<JSONRPCMessage> apply(JSONRPCMessage message) {
-					return Mono.just(message).transform(handler);
+			.flatMap(message -> Mono.just(message).transform(handler))
+			.doOnNext(response -> {
+				if (response != null) {
+					this.outboundSink.tryEmitNext(response);
 				}
 			})
-			.doOnNext(new Consumer<JSONRPCMessage>() {
-				@Override
-				public void accept(JSONRPCMessage response) {
-					if (response != null) {
-						outboundSink.tryEmitNext(response);
-					}
-				}
-			})
-			.doOnTerminate(new Runnable() {
-				@Override
-				public void run() {
-					outboundSink.tryEmitComplete();
-				}
+			.doOnTerminate(() -> {
+				this.outboundSink.tryEmitComplete();
 			})
 			.subscribe();
 	}
@@ -233,33 +204,17 @@ public class WebSocketAcpAgentTransport implements AcpAgentTransport {
 	private void startOutboundProcessing() {
 		this.outboundSink.asFlux()
 			.publishOn(outboundScheduler)
-			.subscribe(new Consumer<JSONRPCMessage>() {
-				@Override
-				public void accept(JSONRPCMessage message) {
-					if (message != null && !isClosing.get() && clientSession != null && clientSession.isOpen()) {
-						try {
-							String jsonMessage = jsonMapper.writeValueAsString(message);
-							logger.debug("Sending WebSocket message: {}", jsonMessage);
-							clientSession.getRemote().sendString(jsonMessage, new WriteCallback() {
-								@Override
-								public void writeFailed(Throwable x) {
-									if (!isClosing.get()) {
-										logger.error("Error sending WebSocket message", x);
-										exceptionHandler.accept(x);
-									}
-								}
-
-								@Override
-								public void writeSuccess() {
-									// no-op
-								}
-							});
-						}
-						catch (Exception e) {
-							if (!isClosing.get()) {
-								logger.error("Error sending WebSocket message", e);
-								exceptionHandler.accept(e);
-							}
+			.subscribe(message -> {
+				if (message != null && !isClosing.get() && clientSession != null && clientSession.isOpen()) {
+					try {
+						String jsonMessage = jsonMapper.writeValueAsString(message);
+						logger.debug("Sending WebSocket message: {}", jsonMessage);
+						clientSession.sendText(jsonMessage, Callback.NOOP);
+					}
+					catch (Exception e) {
+						if (!isClosing.get()) {
+							logger.error("Error sending WebSocket message", e);
+							exceptionHandler.accept(e);
 						}
 					}
 				}
@@ -268,50 +223,35 @@ public class WebSocketAcpAgentTransport implements AcpAgentTransport {
 
 	@Override
 	public Mono<Void> sendMessage(JSONRPCMessage message) {
-		return connectionReady.asMono().then(Mono.defer(new java.util.function.Supplier<Mono<Void>>() {
-			@Override
-			public Mono<Void> get() {
-				if (outboundSink.tryEmitNext(message).isSuccess()) {
-					return Mono.empty();
-				}
-				else {
-					return Mono.error(new RuntimeException("Failed to enqueue message"));
-				}
-			}
+		return connectionReady.asMono().then(Mono.defer(() -> {
+			outboundSink.emitNext(message,
+					Sinks.EmitFailureHandler.busyLooping(Duration.ofMillis(100)));
+			return Mono.empty();
 		}));
 	}
 
 	@Override
 	public Mono<Void> closeGracefully() {
-		return Mono.fromRunnable(new Runnable() {
-			@Override
-			public void run() {
-				logger.debug("WebSocket agent transport closing gracefully");
-				isClosing.set(true);
-				inboundSink.tryEmitComplete();
-				outboundSink.tryEmitComplete();
+		return Mono.fromRunnable(() -> {
+			logger.debug("WebSocket agent transport closing gracefully");
+			isClosing.set(true);
+			inboundSink.tryEmitComplete();
+			outboundSink.tryEmitComplete();
+		}).then(Mono.fromCallable(() -> {
+			if (clientSession != null && clientSession.isOpen()) {
+				clientSession.close();
 			}
-		}).then(Mono.fromCallable(new java.util.concurrent.Callable<Void>() {
-			@Override
-			public Void call() throws Exception {
-				if (clientSession != null && clientSession.isOpen()) {
-					clientSession.close();
-				}
-				if (server != null) {
-					server.stop();
-				}
-				return null;
+			if (server != null) {
+				server.stop();
 			}
-		})).then(Mono.fromRunnable(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					outboundScheduler.dispose();
-					logger.debug("WebSocket agent transport closed");
-				}
-				catch (Exception e) {
-					logger.error("Error during graceful shutdown", e);
-				}
+			return null;
+		})).then(Mono.fromRunnable(() -> {
+			try {
+				outboundScheduler.dispose();
+				logger.debug("WebSocket agent transport closed");
+			}
+			catch (Exception e) {
+				logger.error("Error during graceful shutdown", e);
 			}
 		}));
 	}
@@ -333,14 +273,13 @@ public class WebSocketAcpAgentTransport implements AcpAgentTransport {
 
 	/**
 	 * Jetty WebSocket endpoint for handling client connections.
-	 * Must be public with a public no-arg constructor for Jetty 9.4 reflection-based creation.
 	 */
 	@WebSocket
 	public class AcpWebSocketEndpoint {
 
-		@OnWebSocketConnect
+		@OnWebSocketOpen
 		public void onOpen(Session session) {
-			logger.info("WebSocket client connected from {}", session.getRemoteAddress());
+			logger.info("WebSocket client connected from {}", session.getRemoteSocketAddress());
 			clientSession = session;
 			connectionReady.tryEmitValue(null);
 		}
@@ -366,7 +305,7 @@ public class WebSocketAcpAgentTransport implements AcpAgentTransport {
 		}
 
 		@OnWebSocketClose
-		public void onClose(int statusCode, String reason) {
+		public void onClose(Session session, int statusCode, String reason) {
 			logger.info("WebSocket client disconnected: {} - {}", statusCode, reason);
 			clientSession = null;
 			isClosing.set(true);
@@ -375,7 +314,7 @@ public class WebSocketAcpAgentTransport implements AcpAgentTransport {
 		}
 
 		@OnWebSocketError
-		public void onError(Throwable error) {
+		public void onError(Session session, Throwable error) {
 			if (!isClosing.get()) {
 				logger.error("WebSocket error", error);
 				exceptionHandler.accept(error);

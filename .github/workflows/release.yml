@@ -6,11 +6,19 @@ on:
       version:
         description: 'Release version (e.g., 0.9.0)'
         required: true
+      next_dev_version:
+        description: 'Next development version (e.g., 0.10.0-SNAPSHOT). Leave empty to auto-increment minor version.'
+        required: false
+        default: ''
+        type: string
       skip_tests:
         description: 'Skip tests (use for hotfixes only)'
         required: false
         default: false
         type: boolean
+
+permissions:
+  contents: write
 
 jobs:
   release:
@@ -18,6 +26,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -72,3 +82,17 @@ jobs:
           draft: false
           prerelease: ${{ contains(inputs.version, '-') }}
           generate_release_notes: true
+
+      - name: Bump to next development version
+        run: |
+          if [ -n "${{ inputs.next_dev_version }}" ]; then
+            NEXT_VERSION="${{ inputs.next_dev_version }}"
+          else
+            IFS='.' read -r MAJOR MINOR PATCH <<< "${{ inputs.version }}"
+            NEXT_VERSION="${MAJOR}.$((MINOR + 1)).0-SNAPSHOT"
+          fi
+          echo "Next development version: ${NEXT_VERSION}"
+          ./mvnw versions:set -DnewVersion=${NEXT_VERSION} -DgenerateBackupPoms=false
+          git add -A
+          git commit -m "Bump version to ${NEXT_VERSION}"
+          git push origin HEAD:main

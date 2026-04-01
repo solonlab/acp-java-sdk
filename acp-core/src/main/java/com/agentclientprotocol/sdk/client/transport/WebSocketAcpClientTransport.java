@@ -5,21 +5,22 @@
 package com.agentclientprotocol.sdk.client.transport;
 
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.WebSocket;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import com.agentclientprotocol.sdk.json.McpJsonMapper;
-import com.agentclientprotocol.sdk.json.TypeRef;
 import com.agentclientprotocol.sdk.spec.AcpClientTransport;
 import com.agentclientprotocol.sdk.spec.AcpSchema;
 import com.agentclientprotocol.sdk.spec.AcpSchema.JSONRPCMessage;
 import com.agentclientprotocol.sdk.util.Assert;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import io.modelcontextprotocol.json.McpJsonMapper;
+import io.modelcontextprotocol.json.TypeRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
@@ -29,11 +30,20 @@ import reactor.core.scheduler.Schedulers;
 
 /**
  * Implementation of the ACP WebSocket transport for clients that communicates with an
- * agent using WebSocket connections. Uses Jetty 9.x WebSocket client API for Java 8 compatibility.
+ * agent using WebSocket connections. Uses the JDK 11+ {@link java.net.http.WebSocket} API.
  *
  * <p>
  * Messages are exchanged as JSON-RPC messages over WebSocket text frames.
  * </p>
+ *
+ * <p>
+ * Key features:
+ * <ul>
+ * <li>Zero external dependencies (uses JDK built-in WebSocket)</li>
+ * <li>Thread-safe message processing with dedicated schedulers</li>
+ * <li>Proper resource management and graceful shutdown</li>
+ * <li>Backpressure support via Reactor Sinks</li>
+ * </ul>
  *
  * @author Mark Pollack
  */
@@ -48,7 +58,7 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
 
 	private final McpJsonMapper jsonMapper;
 
-	private final WebSocketClient webSocketClient;
+	private final HttpClient httpClient;
 
 	private final Sinks.Many<JSONRPCMessage> inboundSink;
 
@@ -56,7 +66,7 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
 
 	private final Sinks.One<Void> connectionReady = Sinks.one();
 
-	private volatile Session webSocketSession;
+	private WebSocket webSocket;
 
 	private Scheduler outboundScheduler;
 
@@ -64,12 +74,7 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
 
 	private final AtomicBoolean isConnected = new AtomicBoolean(false);
 
-	private Consumer<Throwable> exceptionHandler = new Consumer<Throwable>() {
-		@Override
-		public void accept(Throwable t) {
-			logger.error("Transport error", t);
-		}
-	};
+	private Consumer<Throwable> exceptionHandler = t -> logger.error("Transport error", t);
 
 	private Duration connectTimeout = Duration.ofSeconds(30);
 
@@ -79,35 +84,38 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
 	 * @param jsonMapper The JsonMapper to use for JSON serialization/deserialization
 	 */
 	public WebSocketAcpClientTransport(URI serverUri, McpJsonMapper jsonMapper) {
-		this(serverUri, jsonMapper, new WebSocketClient());
+		this(serverUri, jsonMapper, HttpClient.newBuilder()
+			.executor(Executors.newCachedThreadPool(r -> {
+				Thread t = new Thread(r, "acp-ws-client");
+				t.setDaemon(true);
+				return t;
+			}))
+			.build());
 	}
 
 	/**
-	 * Creates a new WebSocketAcpClientTransport with custom WebSocketClient.
+	 * Creates a new WebSocketAcpClientTransport with custom HttpClient.
 	 * @param serverUri The WebSocket URI to connect to
 	 * @param jsonMapper The JsonMapper to use for JSON serialization/deserialization
-	 * @param webSocketClient The Jetty WebSocketClient to use for connections
+	 * @param httpClient The HttpClient to use for WebSocket connections
 	 */
-	public WebSocketAcpClientTransport(URI serverUri, McpJsonMapper jsonMapper, WebSocketClient webSocketClient) {
+	public WebSocketAcpClientTransport(URI serverUri, McpJsonMapper jsonMapper, HttpClient httpClient) {
 		Assert.notNull(serverUri, "The serverUri can not be null");
 		Assert.notNull(jsonMapper, "The JsonMapper can not be null");
-		Assert.notNull(webSocketClient, "The WebSocketClient can not be null");
+		Assert.notNull(httpClient, "The HttpClient can not be null");
 
 		this.serverUri = serverUri;
 		this.jsonMapper = jsonMapper;
-		this.webSocketClient = webSocketClient;
+		this.httpClient = httpClient;
 
 		this.inboundSink = Sinks.many().unicast().onBackpressureBuffer();
 		this.outboundSink = Sinks.many().unicast().onBackpressureBuffer();
 		// Use daemon thread so JVM can exit if closeGracefully() isn't called
 		this.outboundScheduler = Schedulers.fromExecutorService(
-			Executors.newSingleThreadExecutor(new java.util.concurrent.ThreadFactory() {
-				@Override
-				public Thread newThread(Runnable r) {
-					Thread t = new Thread(r, "acp-ws-client-outbound");
-					t.setDaemon(true);
-					return t;
-				}
+			Executors.newSingleThreadExecutor(r -> {
+				Thread t = new Thread(r, "acp-ws-client-outbound");
+				t.setDaemon(true);
+				return t;
 			}), "ws-client-outbound");
 	}
 
@@ -127,66 +135,43 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
 			return Mono.error(new IllegalStateException("Already connected"));
 		}
 
-		return Mono.<Void>fromCallable(new java.util.concurrent.Callable<Void>() {
-			@Override
-			public Void call() throws Exception {
-				logger.info("Connecting to WebSocket server at {}", serverUri);
+		return Mono.fromFuture(() -> {
+			logger.info("Connecting to WebSocket server at {}", serverUri);
 
-				// Set up inbound message handling
-				handleIncomingMessages(handler);
+			// Set up inbound message handling
+			handleIncomingMessages(handler);
 
-				// Start the Jetty WebSocket client
-				if (!webSocketClient.isStarted()) {
-					webSocketClient.setConnectTimeout(connectTimeout.toMillis());
-					webSocketClient.start();
-				}
+			// Build WebSocket connection with listener
+			CompletableFuture<WebSocket> wsFuture = httpClient.newWebSocketBuilder()
+				.connectTimeout(connectTimeout)
+				.buildAsync(serverUri, new AcpWebSocketListener());
 
-				// Connect with our listener
-				Session session = webSocketClient.connect(new AcpWebSocketListener(), serverUri).get();
-				webSocketSession = session;
-
-				startOutboundProcessing();
-				connectionReady.tryEmitValue(null);
-				logger.info("Connected to WebSocket server at {}", serverUri);
-				return null;
-			}
-		}).doOnError(new Consumer<Throwable>() {
-			@Override
-			public void accept(Throwable e) {
-				logger.error("Failed to connect to WebSocket server at {}", serverUri, e);
-				isConnected.set(false);
-				exceptionHandler.accept(e);
-			}
-		}).doOnCancel(new Runnable() {
-			@Override
-			public void run() {
-				logger.debug("WebSocket connection cancelled");
-				isConnected.set(false);
-			}
+			return wsFuture;
+		}).doOnSuccess(ws -> {
+			this.webSocket = ws;
+			startOutboundProcessing();
+			connectionReady.tryEmitValue(null);
+			logger.info("Connected to WebSocket server at {}", serverUri);
+		}).doOnError(e -> {
+			logger.error("Failed to connect to WebSocket server at {}", serverUri, e);
+			isConnected.set(false);
+			exceptionHandler.accept(e);
+		}).doOnCancel(() -> {
+			logger.debug("WebSocket connection cancelled");
+			isConnected.set(false);
 		}).then();
 	}
 
 	private void handleIncomingMessages(Function<Mono<JSONRPCMessage>, Mono<JSONRPCMessage>> handler) {
 		this.inboundSink.asFlux()
-			.flatMap(new Function<JSONRPCMessage, Mono<JSONRPCMessage>>() {
-				@Override
-				public Mono<JSONRPCMessage> apply(JSONRPCMessage message) {
-					return Mono.just(message).transform(handler);
+			.flatMap(message -> Mono.just(message).transform(handler))
+			.doOnNext(response -> {
+				if (response != null) {
+					this.outboundSink.tryEmitNext(response);
 				}
 			})
-			.doOnNext(new Consumer<JSONRPCMessage>() {
-				@Override
-				public void accept(JSONRPCMessage response) {
-					if (response != null) {
-						outboundSink.tryEmitNext(response);
-					}
-				}
-			})
-			.doOnTerminate(new Runnable() {
-				@Override
-				public void run() {
-					outboundSink.tryEmitComplete();
-				}
+			.doOnTerminate(() -> {
+				this.outboundSink.tryEmitComplete();
 			})
 			.subscribe();
 	}
@@ -194,20 +179,17 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
 	private void startOutboundProcessing() {
 		this.outboundSink.asFlux()
 			.publishOn(outboundScheduler)
-			.subscribe(new Consumer<JSONRPCMessage>() {
-				@Override
-				public void accept(JSONRPCMessage message) {
-					if (message != null && !isClosing.get() && webSocketSession != null && webSocketSession.isOpen()) {
-						try {
-							String jsonMessage = jsonMapper.writeValueAsString(message);
-							logger.debug("Sending WebSocket message: {}", jsonMessage);
-							webSocketSession.getRemote().sendString(jsonMessage);
-						}
-						catch (Exception e) {
-							if (!isClosing.get()) {
-								logger.error("Error sending WebSocket message", e);
-								exceptionHandler.accept(e);
-							}
+			.subscribe(message -> {
+				if (message != null && !isClosing.get() && webSocket != null) {
+					try {
+						String jsonMessage = jsonMapper.writeValueAsString(message);
+						logger.debug("Sending WebSocket message: {}", jsonMessage);
+						webSocket.sendText(jsonMessage, true).join();
+					}
+					catch (Exception e) {
+						if (!isClosing.get()) {
+							logger.error("Error sending WebSocket message", e);
+							exceptionHandler.accept(e);
 						}
 					}
 				}
@@ -216,53 +198,33 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
 
 	@Override
 	public Mono<Void> sendMessage(JSONRPCMessage message) {
-		return connectionReady.asMono().then(Mono.defer(new java.util.function.Supplier<Mono<Void>>() {
-			@Override
-			public Mono<Void> get() {
-				if (outboundSink.tryEmitNext(message).isSuccess()) {
-					return Mono.empty();
-				}
-				else {
-					return Mono.error(new RuntimeException("Failed to enqueue message"));
-				}
-			}
+		return connectionReady.asMono().then(Mono.defer(() -> {
+			outboundSink.emitNext(message,
+					Sinks.EmitFailureHandler.busyLooping(Duration.ofMillis(100)));
+			return Mono.empty();
 		}));
 	}
 
 	@Override
 	public Mono<Void> closeGracefully() {
-		return Mono.fromRunnable(new Runnable() {
-			@Override
-			public void run() {
-				logger.debug("WebSocket transport closing gracefully");
-				isClosing.set(true);
-				inboundSink.tryEmitComplete();
-				outboundSink.tryEmitComplete();
+		return Mono.fromRunnable(() -> {
+			logger.debug("WebSocket transport closing gracefully");
+			isClosing.set(true);
+			inboundSink.tryEmitComplete();
+			outboundSink.tryEmitComplete();
+		}).then(Mono.defer(() -> {
+			if (webSocket != null) {
+				return Mono.fromFuture(webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "Client closing")
+					.thenApply(ws -> null));
 			}
-		}).then(Mono.defer(new java.util.function.Supplier<Mono<Void>>() {
-			@Override
-			public Mono<Void> get() {
-				if (webSocketSession != null && webSocketSession.isOpen()) {
-					try {
-						webSocketSession.close(1000, "Client closing");
-					}
-					catch (Exception e) {
-						logger.warn("Error closing WebSocket session", e);
-					}
-				}
-				return Mono.empty();
+			return Mono.empty();
+		})).then(Mono.fromRunnable(() -> {
+			try {
+				outboundScheduler.dispose();
+				logger.debug("WebSocket transport closed");
 			}
-		})).then(Mono.fromRunnable(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					outboundScheduler.dispose();
-					webSocketClient.stop();
-					logger.debug("WebSocket transport closed");
-				}
-				catch (Exception e) {
-					logger.error("Error during graceful shutdown", e);
-				}
+			catch (Exception e) {
+				logger.error("Error during graceful shutdown", e);
 			}
 		}));
 	}
@@ -278,49 +240,58 @@ public class WebSocketAcpClientTransport implements AcpClientTransport {
 	}
 
 	/**
-	 * Jetty WebSocket listener implementation for handling incoming messages.
+	 * WebSocket.Listener implementation for handling incoming messages.
 	 */
-	private class AcpWebSocketListener extends WebSocketAdapter {
+	private class AcpWebSocketListener implements WebSocket.Listener {
 
 		private final StringBuilder messageBuffer = new StringBuilder();
 
 		@Override
-		public void onWebSocketConnect(Session session) {
-			super.onWebSocketConnect(session);
+		public void onOpen(WebSocket webSocket) {
 			logger.debug("WebSocket connection opened");
+			webSocket.request(1);
 		}
 
 		@Override
-		public void onWebSocketText(String message) {
-			logger.debug("Received WebSocket message: {}", message);
+		public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+			messageBuffer.append(data);
 
-			try {
-				JSONRPCMessage jsonRpcMessage = AcpSchema.deserializeJsonRpcMessage(jsonMapper, message);
-				if (!inboundSink.tryEmitNext(jsonRpcMessage).isSuccess()) {
+			if (last) {
+				String message = messageBuffer.toString();
+				messageBuffer.setLength(0);
+
+				logger.debug("Received WebSocket message: {}", message);
+
+				try {
+					JSONRPCMessage jsonRpcMessage = AcpSchema.deserializeJsonRpcMessage(jsonMapper, message);
+					if (!inboundSink.tryEmitNext(jsonRpcMessage).isSuccess()) {
+						if (!isClosing.get()) {
+							logger.error("Failed to enqueue inbound message");
+						}
+					}
+				}
+				catch (Exception e) {
 					if (!isClosing.get()) {
-						logger.error("Failed to enqueue inbound message");
+						logger.error("Error processing inbound message", e);
+						exceptionHandler.accept(e);
 					}
 				}
 			}
-			catch (Exception e) {
-				if (!isClosing.get()) {
-					logger.error("Error processing inbound message", e);
-					exceptionHandler.accept(e);
-				}
-			}
+
+			webSocket.request(1);
+			return CompletableFuture.completedFuture(null);
 		}
 
 		@Override
-		public void onWebSocketClose(int statusCode, String reason) {
-			super.onWebSocketClose(statusCode, reason);
+		public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
 			logger.info("WebSocket connection closed: {} - {}", statusCode, reason);
 			isClosing.set(true);
 			inboundSink.tryEmitComplete();
+			return CompletableFuture.completedFuture(null);
 		}
 
 		@Override
-		public void onWebSocketError(Throwable error) {
-			super.onWebSocketError(error);
+		public void onError(WebSocket webSocket, Throwable error) {
 			if (!isClosing.get()) {
 				logger.error("WebSocket error", error);
 				exceptionHandler.accept(error);
