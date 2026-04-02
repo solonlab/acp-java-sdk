@@ -18,9 +18,10 @@
         <module>acp-core</module>
         <module>acp-agent-support</module>
         <module>acp-test</module>
-        <module>acp-websocket-jetty</module>
+        <!-- acp-websocket-jetty requires Java 17+ (Jetty 12), use profile to enable -->
     </modules>
 
+    <!-- Profile for Java 17+ modules -->
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
@@ -54,7 +55,7 @@
     </developers>
 
     <properties>
-        <java.version>17</java.version>
+        <java.version>8</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -71,7 +72,7 @@
         <junit.version>5.11.0</junit.version>
         <assertj.version>3.27.7</assertj.version>
         <mockito.version>5.8.0</mockito.version>
-        <logback.version>1.5.12</logback.version>
+        <logback.version>1.3.14</logback.version>
 
         <!-- Plugin versions -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
@@ -249,6 +250,21 @@
     </build>
 
     <profiles>
+        <!-- Java 17+ modules (Jetty 12 websocket requires Java 17+) -->
+        <profile>
+            <id>java17-modules</id>
+            <activation>
+                <jdk>[17,)</jdk>
+            </activation>
+            <modules>
+                <module>acp-annotations</module>
+                <module>acp-core</module>
+                <module>acp-agent-support</module>
+                <module>acp-test</module>
+                <module>acp-websocket-jetty</module>
+            </modules>
+        </profile>
+
         <!-- Release profile for Maven Central Portal publishing -->
         <profile>
             <id>release</id>
